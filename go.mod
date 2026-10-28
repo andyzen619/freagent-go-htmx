@@ -1,3 +1,3 @@
-module fantasy_waiver_assistant
+module freagent-go-htmx
 
 go 1.26.6

@@ -10,7 +10,7 @@ import (
 	"strings"
 	"time"
 
-	config "fantasy_waiver_assistant/internal/shared"
+	config "freagent-go-htmx/internal/shared"
 )
 
 type Token struct {

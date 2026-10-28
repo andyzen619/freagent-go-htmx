@@ -6,7 +6,7 @@ import (
 	"html/template"
 	"net/http"
 
-	"fantasy_waiver_assistant/internal/auth"
+	"freagent-go-htmx/internal/auth"
 )
 
 func main() {
