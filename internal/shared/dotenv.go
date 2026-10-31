@@ -33,6 +33,9 @@ func ParseDotEnv(r io.Reader) (map[string]string, error) {
 	sc := bufio.NewScanner(r)
 	for lineNo := 1; sc.Scan(); lineNo++ {
 		line := strings.TrimSuffix(sc.Text(), "\r")
+
+		fmt.Println(line)
+
 		if lineNo == 1 {
 			line = strings.TrimPrefix(line, "\ufeff") // UTF-8 BOM
 		}
