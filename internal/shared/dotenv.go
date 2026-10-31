@@ -5,6 +5,8 @@ import (
 	"errors"
 	"fmt"
 	"io"
+	"io/fs"
+	"os"
 	"strings"
 )
 
@@ -63,6 +65,37 @@ func ParseDotEnv(r io.Reader) (map[string]string, error) {
 		return nil, err
 	}
 	return values, nil
+}
+
+// LoadDotEnv reads path and applies its values to the process environment.
+//
+// Variables already present in the environment are never overwritten, so a
+// real deployment env always beats the file. A missing file is not an error:
+// production simply has no .env.
+func LoadDotEnv(path string) error {
+	f, err := os.Open(path)
+	if errors.Is(err, fs.ErrNotExist) {
+		return nil
+	}
+	if err != nil {
+		return err
+	}
+	defer f.Close()
+
+	values, err := ParseDotEnv(f)
+	if err != nil {
+		return fmt.Errorf("%s: %w", path, err)
+	}
+
+	for key, value := range values {
+		if _, set := os.LookupEnv(key); set {
+			continue
+		}
+		if err := os.Setenv(key, value); err != nil {
+			return err
+		}
+	}
+	return nil
 }
 
 // trimExportPrefix removes a leading "export " (or "export\t") if present.

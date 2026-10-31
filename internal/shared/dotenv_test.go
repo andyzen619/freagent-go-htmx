@@ -3,6 +3,7 @@ package config
 import (
 	"maps"
 	"os"
+	"path/filepath"
 	"strings"
 	"testing"
 )
@@ -179,5 +180,69 @@ func TestParseDotEnvDoesNotSetEnv(t *testing.T) {
 	}
 	if v, ok := os.LookupEnv(key); ok {
 		t.Fatalf("ParseDotEnv modified the process environment: %s=%s", key, v)
+	}
+}
+
+func TestLoadDotEnvMissingFile(t *testing.T) {
+	if err := LoadDotEnv(filepath.Join(t.TempDir(), ".env")); err != nil {
+		t.Fatalf("missing file should not be an error, got: %v", err)
+	}
+}
+
+func TestLoadDotEnvSetsValues(t *testing.T) {
+	unsetAfterTest(t, "FREAGENT_TEST_A", "FREAGENT_TEST_B")
+	path := writeEnvFile(t, "FREAGENT_TEST_A=one\nFREAGENT_TEST_B=\"two words\"\n")
+
+	if err := LoadDotEnv(path); err != nil {
+		t.Fatalf("unexpected error: %v", err)
+	}
+	if got := os.Getenv("FREAGENT_TEST_A"); got != "one" {
+		t.Errorf("FREAGENT_TEST_A = %q, want %q", got, "one")
+	}
+	if got := os.Getenv("FREAGENT_TEST_B"); got != "two words" {
+		t.Errorf("FREAGENT_TEST_B = %q, want %q", got, "two words")
+	}
+}
+
+func TestLoadDotEnvRealEnvWins(t *testing.T) {
+	t.Setenv("FREAGENT_TEST_C", "fromshell")
+	path := writeEnvFile(t, "FREAGENT_TEST_C=fromfile\n")
+
+	if err := LoadDotEnv(path); err != nil {
+		t.Fatalf("unexpected error: %v", err)
+	}
+	if got := os.Getenv("FREAGENT_TEST_C"); got != "fromshell" {
+		t.Errorf("FREAGENT_TEST_C = %q, want %q", got, "fromshell")
+	}
+}
+
+func TestLoadDotEnvBadFileNamesPath(t *testing.T) {
+	path := writeEnvFile(t, "JUSTAKEY\n")
+
+	err := LoadDotEnv(path)
+	if err == nil {
+		t.Fatal("expected an error, got nil")
+	}
+	if !strings.Contains(err.Error(), path) || !strings.Contains(err.Error(), "line 1") {
+		t.Fatalf("error should name the path and line, got: %v", err)
+	}
+}
+
+// writeEnvFile puts content in a temp .env and returns its path.
+func writeEnvFile(t *testing.T, content string) string {
+	t.Helper()
+	path := filepath.Join(t.TempDir(), ".env")
+	if err := os.WriteFile(path, []byte(content), 0o600); err != nil {
+		t.Fatalf("writing test .env: %v", err)
+	}
+	return path
+}
+
+// unsetAfterTest clears keys now and restores them as unset when the test ends.
+func unsetAfterTest(t *testing.T, keys ...string) {
+	t.Helper()
+	for _, key := range keys {
+		os.Unsetenv(key)
+		t.Cleanup(func() { os.Unsetenv(key) })
 	}
 }
