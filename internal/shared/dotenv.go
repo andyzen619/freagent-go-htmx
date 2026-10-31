@@ -34,13 +34,12 @@ func ParseDotEnv(r io.Reader) (map[string]string, error) {
 	for lineNo := 1; sc.Scan(); lineNo++ {
 		line := strings.TrimSuffix(sc.Text(), "\r")
 
-		fmt.Println(line)
-
 		if lineNo == 1 {
 			line = strings.TrimPrefix(line, "\ufeff") // UTF-8 BOM
 		}
 
 		line = strings.TrimSpace(line)
+
 		if line == "" || strings.HasPrefix(line, "#") {
 			continue
 		}
@@ -48,9 +47,11 @@ func ParseDotEnv(r io.Reader) (map[string]string, error) {
 		line = trimExportPrefix(line)
 
 		key, raw, found := strings.Cut(line, "=")
+
 		if !found {
 			return nil, fmt.Errorf("line %d: missing '=' in %q", lineNo, line)
 		}
+
 		key = strings.TrimSpace(key)
 		if key == "" {
 			return nil, fmt.Errorf("line %d: empty key", lineNo)

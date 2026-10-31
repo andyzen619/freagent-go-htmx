@@ -4,12 +4,20 @@ import (
 	"crypto/rand"
 	"fmt"
 	"html/template"
+	"log"
 	"net/http"
 
 	"fantasy_waiver_assistant/internal/auth"
+	config "fantasy_waiver_assistant/internal/shared"
 )
 
 func main() {
+	cfg, err := config.Load()
+	if err != nil {
+		log.Fatal(err)
+	}
+	auth.Init(cfg)
+
 	http.HandleFunc("/", func(w http.ResponseWriter, r *http.Request) {
 		tmpl := template.Must(template.ParseFiles("internal/home/templates/index.html"))
 		w.Header().Set("Content-Type", "text/html")
