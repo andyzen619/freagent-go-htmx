@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"net/http"
 	"net/url"
+	"os"
 	"strings"
 	"time"
 
@@ -31,6 +32,23 @@ func New(cfg config.Config) *Client {
 
 func (c *Client) LoggedIn() bool {
 	return c.token != nil
+}
+
+// Token returns the current token, or nil when not logged in.
+func (c *Client) Token() *Token {
+	return c.token
+}
+
+// Save writes the token as JSON to path, owned and readable by the user only.
+func (c *Client) Save(path string) error {
+	if c.token == nil {
+		return fmt.Errorf("not logged in")
+	}
+	data, err := json.MarshalIndent(c.token, "", "  ")
+	if err != nil {
+		return err
+	}
+	return os.WriteFile(path, data, 0o600)
 }
 
 func (c *Client) AuthCodeURL(state string) string {

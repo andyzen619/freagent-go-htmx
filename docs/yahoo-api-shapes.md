@@ -309,71 +309,46 @@ flat objects for players.**
 4. Wrap bare scalar-vs-list leaves as `[]T` uniformly.
 5. Decode ids/keys/timestamps as strings or `json.Number`, parse lazily.
 
-**Alternative worth considering:** XML is Yahoo's canonical format (default response, all
-official samples) and maps cleanly onto Go `encoding/xml` structs with zero normalization
-— e.g. `famendola1/yfantasy/schema`. Only pick JSON if we want the same client to serve
-HTMX fragments from raw JSON.
+**Decision:** this project decodes **XML**. It is Yahoo's canonical format (the default
+response and every official sample) and maps cleanly onto Go `encoding/xml` structs with
+no normalization. The types and client live in `internal/yahoo/`; the JSON quirks above are
+kept for reference only.
 
-Either way: once OAuth lands, capture real responses from
+Once OAuth lands, capture real responses from
 `league/{key}`, `league/{key}/settings`, `league/{key}/players;status=FA;out=ownership,percent_owned`
-into testdata fixtures and pin the shapes with golden tests — the frontend host above is
-not guaranteed identical to the OAuth API host.
+into `internal/yahoo/testdata/` and pin them with golden tests — the frontend host probed
+above is not guaranteed identical to the OAuth API host.
 
 ---
 
-## Go mapping sketch (XML tags shown; logical shape is format-agnostic)
+## Go implementation
+
+Implemented in `internal/yahoo/` (XML decoding, no third-party dependencies):
+
+| File | Contents |
+|---|---|
+| `types.go` | `League`, `LeagueSettings`, `Player`, `Players`, `Ownership`, `PercentOwned`, `PlayerStats`, ... |
+| `decode.go` | `Envelope` (`<fantasy_content>` root), `APIError`, `decodeResponse` |
+| `path.go` | key builders, `PlayerFilter` (status/position/sort/pagination/out), path encoding |
+| `client.go` | `Client`, `TokenSource`, resource methods, `ErrUnauthorized` |
 
 ```go
-type League struct {
-    LeagueKey   string `xml:"league_key" json:"league_key"`
-    LeagueID    int    `xml:"league_id"  json:"league_id"`
-    Name        string `xml:"name"       json:"name"`
-    URL         string `xml:"url"        json:"url"`
-    DraftStatus string `xml:"draft_status" json:"draft_status"` // predraft|drafting|postdraft
-    NumTeams    int    `xml:"num_teams"  json:"num_teams"`
-    ScoringType string `xml:"scoring_type" json:"scoring_type"` // head|roto|points
-    LeagueType  string `xml:"league_type" json:"league_type"`   // public|private
-    CurrentWeek int    `xml:"current_week" json:"current_week"`
-    StartWeek   int    `xml:"start_week" json:"start_week"`
-    EndWeek     int    `xml:"end_week"   json:"end_week"`
-    StartDate   string `xml:"start_date" json:"start_date"`
-    EndDate     string `xml:"end_date"   json:"end_date"`
-    IsFinished  bool   `xml:"is_finished" json:"is_finished"`
-    GameCode    string `xml:"game_code"  json:"game_code"`
-    Season      int    `xml:"season"     json:"season"`
-    Settings    *Settings `xml:"settings" json:"settings,omitempty"`
-    Players     []Player  `xml:"players>player" json:"players,omitempty"`
-}
+c := yahoo.NewClient(func(ctx context.Context) (string, error) {
+	// wire this to auth.Client once tokens persist
+	return token, nil
+})
 
-type Player struct {
-    PlayerKey          string   `xml:"player_key" json:"player_key"`
-    PlayerID           int      `xml:"player_id"  json:"player_id"`
-    Name               Name     `xml:"name"       json:"name"`
-    Status             string   `xml:"status"     json:"status,omitempty"`      // Q|O|IR|P|""
-    StatusFull         string   `xml:"status_full" json:"status_full,omitempty"`
-    InjuryNote         string   `xml:"injury_note" json:"injury_note,omitempty"`
-    EditorialTeamKey   string   `xml:"editorial_team_key" json:"editorial_team_key"`
-    EditorialTeamAbbr  string   `xml:"editorial_team_abbr" json:"editorial_team_abbr"`
-    ByeWeeks           []int    // bye_weeks>week — single-or-list quirk
-    UniformNumber      int      `xml:"uniform_number" json:"uniform_number"`
-    DisplayPosition    string   `xml:"display_position" json:"display_position"`
-    PositionType       string   `xml:"position_type" json:"position_type"`
-    PrimaryPosition    string   `xml:"primary_position" json:"primary_position"`
-    EligiblePositions  []string // eligible_positions>position — single-or-list quirk
-    IsUndroppable      bool     `xml:"is_undroppable" json:"is_undroppable"`
-    PlayerStats        *PlayerStats   `xml:"player_stats" json:"player_stats,omitempty"`
-    PlayerPoints       *PlayerPoints  `xml:"player_points" json:"player_points,omitempty"`
-    Ownership          *Ownership     `xml:"ownership" json:"ownership,omitempty"`
-    PercentOwned       *PercentOwned  `xml:"percent_owned" json:"percent_owned,omitempty"`
-    DraftAnalysis      *DraftAnalysis `xml:"draft_analysis" json:"draft_analysis,omitempty"`
-}
-
-type Ownership struct {
-    OwnershipType string `xml:"ownership_type" json:"ownership_type"` // team|waivers|freeagent
-    OwnerTeamKey  string `xml:"owner_team_key"  json:"owner_team_key,omitempty"`
-    OwnerTeamName string `xml:"owner_team_name" json:"owner_team_name,omitempty"`
-}
+league, err := c.League(ctx, yahoo.LeagueKey("470", 1000), "settings")
+players, err := c.LeaguePlayers(ctx, league.LeagueKey, yahoo.PlayerFilter{
+	Status: yahoo.StatusFreeAgents,
+	Sort:   "PTS",
+	Count:  25, // Yahoo caps pages at 25
+	Out:    []string{"ownership", "percent_owned"},
+})
 ```
 
-(Names/positions nested as their own structs; `Settings` per the field table above.
-Prefer stringly-typed decode for ids and parse on use where Yahoo's types wobble.)
+Golden fixtures in `internal/yahoo/testdata/` come from the official sample responses
+(`league.xml`, `league_settings.xml`, `player_league.xml`, `player_stats.xml`) plus
+synthetic players/ownership documents. On a 401 the client returns `yahoo.ErrUnauthorized`
+so the caller can refresh the token and retry. The JSON decoder is deliberately not
+implemented.

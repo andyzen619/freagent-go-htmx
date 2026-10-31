@@ -1,0 +1,101 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<fantasy_content xml:lang="en-US" xmlns:yahoo="http://www.yahooapis.com/v1/base.rng" xmlns="http://fantasysports.yahooapis.com/fantasy/v2/base.rng">
+ <players count="2">
+  <player>
+    <player_key>470.p.30121</player_key>
+    <player_id>30121</player_id>
+    <name>
+     <full>Christian McCaffrey</full>
+     <first>Christian</first>
+     <last>McCaffrey</last>
+     <ascii_first>Christian</ascii_first>
+     <ascii_last>McCaffrey</ascii_last>
+    </name>
+    <url>https://sports.yahoo.com/nfl/players/30121</url>
+    <status>Q</status>
+    <status_full>Questionable</status_full>
+    <injury_note>Hamstring</injury_note>
+    <editorial_player_key>nfl.p.30121</editorial_player_key>
+    <editorial_team_key>nfl.t.25</editorial_team_key>
+    <editorial_team_full_name>San Francisco 49ers</editorial_team_full_name>
+    <editorial_team_abbr>SF</editorial_team_abbr>
+    <bye_weeks>
+     <week>8</week>
+    </bye_weeks>
+    <uniform_number>23</uniform_number>
+    <display_position>RB</display_position>
+    <headshot>
+     <url>https://s.yimg.com/example/30121.png</url>
+     <size>small</size>
+    </headshot>
+    <is_undroppable>0</is_undroppable>
+    <position_type>O</position_type>
+    <primary_position>RB</primary_position>
+    <eligible_positions>
+     <position>RB</position>
+     <position>W/R/T</position>
+    </eligible_positions>
+    <ownership>
+     <ownership_type>freeagent</ownership_type>
+     <owner_team_key></owner_team_key>
+     <owner_team_name></owner_team_name>
+    </ownership>
+    <percent_owned>
+     <coverage_type>season</coverage_type>
+     <value>99</value>
+     <delta>0</delta>
+    </percent_owned>
+    <draft_analysis>
+     <average_pick>1.2</average_pick>
+     <average_round>1.1</average_round>
+     <average_cost>40.0</average_cost>
+     <percent_drafted>1.00</percent_drafted>
+    </draft_analysis>
+   </player>
+  <player>
+    <player_key>470.p.40059</player_key>
+    <player_id>40059</player_id>
+    <name>
+     <full>Jahmyr Gibbs</full>
+     <first>Jahmyr</first>
+     <last>Gibbs</last>
+     <ascii_first>Jahmyr</ascii_first>
+     <ascii_last>Gibbs</ascii_last>
+    </name>
+    <url>https://sports.yahoo.com/nfl/players/40059</url>
+    <status></status>
+    <editorial_player_key>nfl.p.40059</editorial_player_key>
+    <editorial_team_key>nfl.t.8</editorial_team_key>
+    <editorial_team_full_name>Detroit Lions</editorial_team_full_name>
+    <editorial_team_abbr>Det</editorial_team_abbr>
+    <bye_weeks>
+     <week>5</week>
+     <week>6</week>
+    </bye_weeks>
+    <uniform_number>26</uniform_number>
+    <display_position>RB</display_position>
+    <is_undroppable>0</is_undroppable>
+    <position_type>O</position_type>
+    <primary_position>RB</primary_position>
+    <eligible_positions>
+     <position>RB</position>
+    </eligible_positions>
+    <ownership>
+     <ownership_type>team</ownership_type>
+     <owner_team_key>470.l.1000.t.3</owner_team_key>
+     <owner_team_name>Team Curtain</owner_team_name>
+    </ownership>
+    <percent_owned>
+     <coverage_type>season</coverage_type>
+     <value>65</value>
+     <delta>-2</delta>
+    </percent_owned>
+    <draft_analysis>
+     <average_pick>8.4</average_pick>
+     <average_round>1.9</average_round>
+     <average_cost>31.5</average_cost>
+     <percent_drafted>1.00</percent_drafted>
+    </draft_analysis>
+   </player>
+ </players>
+</fantasy_content>

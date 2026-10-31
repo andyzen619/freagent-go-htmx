@@ -45,6 +45,11 @@ func main() {
 			http.Error(w, err.Error(), http.StatusInternalServerError)
 			return
 		}
+		if err := client.Save(".tokens.json"); err != nil {
+			http.Error(w, err.Error(), http.StatusInternalServerError)
+			return
+		}
+		fmt.Println("access token:", client.Token().AccessToken)
 		http.Redirect(w, r, "/", http.StatusFound)
 	})
 
