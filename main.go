@@ -3,11 +3,11 @@ package main
 import (
 	"crypto/rand"
 	"fmt"
-	"html/template"
 	"log"
 	"net/http"
 
 	"fantasy_waiver_assistant/internal/auth"
+	"fantasy_waiver_assistant/internal/home"
 	config "fantasy_waiver_assistant/internal/shared"
 )
 
@@ -18,19 +18,16 @@ func main() {
 	}
 	client := auth.New(cfg)
 
-	http.HandleFunc("/", func(w http.ResponseWriter, r *http.Request) {
-		tmpl := template.Must(template.ParseFiles("internal/home/templates/index.html"))
-		w.Header().Set("Content-Type", "text/html")
-		_ = tmpl.Execute(w, map[string]any{"LoggedIn": client.LoggedIn()})
-	})
+	mux := http.NewServeMux()
+	home.New(client).Register(mux)
 
-	http.HandleFunc("/login", func(w http.ResponseWriter, r *http.Request) {
+	mux.HandleFunc("/login", func(w http.ResponseWriter, r *http.Request) {
 		state := rand.Text()
 		http.SetCookie(w, &http.Cookie{Name: "oauth_state", Value: state, Path: "/", HttpOnly: true})
 		http.Redirect(w, r, client.AuthCodeURL(state), http.StatusFound)
 	})
 
-	http.HandleFunc("/callback", func(w http.ResponseWriter, r *http.Request) {
+	mux.HandleFunc("/callback", func(w http.ResponseWriter, r *http.Request) {
 		c, err := r.Cookie("oauth_state")
 		if err != nil || c.Value != r.URL.Query().Get("state") {
 			http.Error(w, "invalid state", http.StatusBadRequest)
@@ -54,7 +51,7 @@ func main() {
 	})
 
 	fmt.Println("Server Running on 8080")
-	if err := http.ListenAndServe(":8080", nil); err != nil {
+	if err := http.ListenAndServe(":8080", mux); err != nil {
 		fmt.Println(err)
 	}
 }
