@@ -4,12 +4,21 @@
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1">
     <title>Fantasy Waiver Assistant</title>
+    <link href="https://cdn.jsdelivr.net/npm/daisyui@4.12.24/dist/full.min.css" rel="stylesheet" type="text/css">
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+      .nav { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 8px 14px; }
+      .brand { font-weight: 700; }
+      .links { display: flex; gap: 14px; }
+      .status { display: inline-flex; align-items: center; gap: 6px; color: #374151; }
+      .status-dot { width: 8px; height: 8px; border-radius: 50%; background: #16a34a; }
+    </style>
     <script src="https://unpkg.com/htmx.org@2.0.11"></script>
   </head>
   <body>
-    <nav>
-      <a href="/">Fantasy Waiver Assistant</a>
-      <a href="/players">Free agents</a>
+    <nav class="nav">
+      <a class="brand" href="/">Fantasy Waiver Assistant</a>
+      <span class="links"><a href="/players">Free agents</a></span>
     </nav>
     <main>{{template "content" .}}</main>
   </body>
