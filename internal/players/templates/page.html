@@ -9,11 +9,13 @@
     <a href="/players?pos=PF" hx-get="/hx/players/rows?pos=PF" hx-target="#player-rows" hx-push-url="/players?pos=PF">PF</a>
     <a href="/players?pos=C" hx-get="/hx/players/rows?pos=C" hx-target="#player-rows" hx-push-url="/players?pos=C">C</a>
   </div>
-  <table>
-    <thead>
-      <tr><th>Player</th><th>Pos</th><th>Team</th></tr>
-    </thead>
-    <tbody id="player-rows">{{template "rows" .}}</tbody>
-  </table>
+  <div style="overflow-x:auto">
+    <table>
+      <thead>
+        <tr><th>Player</th><th>Pos</th><th>Team</th></tr>
+      </thead>
+      <tbody id="player-rows">{{template "rows" .}}</tbody>
+    </table>
+  </div>
 </div>
 {{end}}
