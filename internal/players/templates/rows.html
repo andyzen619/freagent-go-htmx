@@ -1,6 +1,6 @@
 {{define "rows"}}
 {{if .Error}}
-<tr><td colspan="3" class="text-error">{{.Error}}</td></tr>
+<tr><td colspan="3">{{.Error}}</td></tr>
 {{else if .Players}}
 {{range .Players}}
 <tr>
@@ -10,6 +10,6 @@
 </tr>
 {{end}}
 {{else}}
-<tr><td colspan="3" class="opacity-60">No free agents found.</td></tr>
+<tr><td colspan="3">No free agents found.</td></tr>
 {{end}}
 {{end}}

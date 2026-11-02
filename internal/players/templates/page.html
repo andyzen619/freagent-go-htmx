@@ -1,20 +1,19 @@
 {{define "content"}}
-<div class="card w-full max-w-2xl bg-base-100 shadow-xl">
-  <div class="card-body">
-    <h2 class="card-title">Free agents</h2>
-    <div class="join">
-      <a class="btn join-item" href="/players" hx-get="/hx/players/rows" hx-target="#player-rows" hx-push-url="/players">All</a>
-      <a class="btn join-item" href="/players?pos=QB" hx-get="/hx/players/rows?pos=QB" hx-target="#player-rows" hx-push-url="/players?pos=QB">QB</a>
-      <a class="btn join-item" href="/players?pos=RB" hx-get="/hx/players/rows?pos=RB" hx-target="#player-rows" hx-push-url="/players?pos=RB">RB</a>
-      <a class="btn join-item" href="/players?pos=WR" hx-get="/hx/players/rows?pos=WR" hx-target="#player-rows" hx-push-url="/players?pos=WR">WR</a>
-      <a class="btn join-item" href="/players?pos=TE" hx-get="/hx/players/rows?pos=TE" hx-target="#player-rows" hx-push-url="/players?pos=TE">TE</a>
-    </div>
-    <table class="table">
-      <thead>
-        <tr><th>Player</th><th>Pos</th><th>Team</th></tr>
-      </thead>
-      <tbody id="player-rows">{{template "rows" .}}</tbody>
-    </table>
+<div>
+  <h2>Free agents</h2>
+  <div>
+    <a href="/players" hx-get="/hx/players/rows" hx-target="#player-rows" hx-push-url="/players">All</a>
+    <a href="/players?pos=PG" hx-get="/hx/players/rows?pos=PG" hx-target="#player-rows" hx-push-url="/players?pos=PG">PG</a>
+    <a href="/players?pos=SG" hx-get="/hx/players/rows?pos=SG" hx-target="#player-rows" hx-push-url="/players?pos=SG">SG</a>
+    <a href="/players?pos=SF" hx-get="/hx/players/rows?pos=SF" hx-target="#player-rows" hx-push-url="/players?pos=SF">SF</a>
+    <a href="/players?pos=PF" hx-get="/hx/players/rows?pos=PF" hx-target="#player-rows" hx-push-url="/players?pos=PF">PF</a>
+    <a href="/players?pos=C" hx-get="/hx/players/rows?pos=C" hx-target="#player-rows" hx-push-url="/players?pos=C">C</a>
   </div>
+  <table>
+    <thead>
+      <tr><th>Player</th><th>Pos</th><th>Team</th></tr>
+    </thead>
+    <tbody id="player-rows">{{template "rows" .}}</tbody>
+  </table>
 </div>
 {{end}}

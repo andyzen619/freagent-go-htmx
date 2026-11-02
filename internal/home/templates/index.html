@@ -1,12 +1,10 @@
 {{define "content"}}
-<div class="card w-96 bg-base-100 shadow-xl">
-  <div class="card-body">
-    <h2 class="card-title">Fantasy waiver Assistant</h2>
-    {{if .LoggedIn}}
-    <p>Logged in with Yahoo</p>
-    {{else}}
-    <a class="btn btn-primary" href="/login">Login with Yahoo</a>
-    {{end}}
-  </div>
+<div>
+  <h2>Fantasy waiver Assistant</h2>
+  {{if .LoggedIn}}
+  <span class="badge">Logged in with Yahoo</span>
+  {{else}}
+  <a href="/login">Login with Yahoo</a>
+  {{end}}
 </div>
 {{end}}
