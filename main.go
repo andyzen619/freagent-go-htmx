@@ -8,6 +8,7 @@ import (
 
 	"fantasy_waiver_assistant/internal/auth"
 	"fantasy_waiver_assistant/internal/home"
+	"fantasy_waiver_assistant/internal/middleware"
 	config "fantasy_waiver_assistant/internal/shared"
 )
 
@@ -19,7 +20,12 @@ func main() {
 	client := auth.New(cfg)
 
 	mux := http.NewServeMux()
-	home.New(client).Register(mux)
+
+	// app holds pages and fragments that need a Yahoo session; /login and
+	// /callback stay public on mux, which matches their patterns first.
+	app := http.NewServeMux()
+	home.New(client).Register(app)
+	mux.Handle("/", middleware.RequireSession(client, app))
 
 	mux.HandleFunc("/login", func(w http.ResponseWriter, r *http.Request) {
 		state := rand.Text()
