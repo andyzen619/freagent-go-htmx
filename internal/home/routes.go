@@ -8,13 +8,13 @@ import (
 	"fantasy_waiver_assistant/internal/web"
 )
 
-//go:embed templates/index.html
+//go:embed templates/page.html
 var templates embed.FS
 
 // page is parsed once at startup, merged over the shared layout. The template
 // is compiled into the binary, so the server does not depend on the working
 // directory.
-var page = web.Parse(templates, "templates/index.html")
+var page = web.Parse(templates, "templates/page.html")
 
 // LoginState reports whether a Yahoo session exists. *auth.Client satisfies it,
 // which keeps this package independent of the auth package.
