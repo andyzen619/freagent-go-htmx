@@ -53,6 +53,16 @@ func TestIndexLoggedIn(t *testing.T) {
 	}
 }
 
+// The shared layout marks the current section, so the nav tab carries
+// aria-current and the "on" style.
+func TestIndexMarksHomeTab(t *testing.T) {
+	body := get(t, true, "/").Body.String()
+
+	if !strings.Contains(body, `aria-current="page"`) || !strings.Contains(body, `class="on"`) {
+		t.Errorf("home tab should be marked active, got %q", body)
+	}
+}
+
 // The root route is deliberately a catch-all, so unknown paths render the home
 // page rather than a 404.
 func TestIndexMatchesUnknownPath(t *testing.T) {

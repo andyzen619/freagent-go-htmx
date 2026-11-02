@@ -7,9 +7,26 @@
     <link href="https://cdn.jsdelivr.net/npm/daisyui@4.12.24/dist/full.min.css" rel="stylesheet" type="text/css">
     <script src="https://cdn.tailwindcss.com"></script>
     <style>
-      .nav { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 8px 14px; }
-      .brand { font-weight: 700; }
-      .links { display: flex; gap: 14px; }
+      body { max-width: 720px; margin: 0 auto; padding: 12px; background: #fff; color: #111;
+             font: 13px/1.45 system-ui, -apple-system, "Segoe UI", sans-serif; }
+      .nav { margin-bottom: 16px; }
+      .brand { display: block; margin-bottom: 6px; font-weight: 700; }
+      .tabs { display: flex; align-items: flex-end; gap: 12px; border-bottom: 1px solid #e5e7eb;
+              font-size: 12px; }
+      .tabs a { padding: 10px 2px; margin-bottom: -1px; border-bottom: 2px solid transparent;
+                color: #6b7280; text-decoration: none; }
+      .tabs a.on { color: #111; border-color: #111; font-weight: 600; }
+      .page-title { margin: 0 0 10px; font-size: 15px; font-weight: 600; text-transform: uppercase;
+                    letter-spacing: .04em; color: #475569; }
+      .chips { display: flex; flex-wrap: wrap; gap: 6px; margin-bottom: 10px; }
+      .chips a { padding: 4px 9px; border: 1px solid #e5e7eb; border-radius: 999px;
+                 font-size: 11px; color: #374151; text-decoration: none; }
+      .chips a.on { background: #111; border-color: #111; color: #fff; }
+      table { width: 100%; border-collapse: collapse; font-size: 12px; }
+      th { padding: 6px 0; border-bottom: 1px solid #e5e7eb; text-align: left; font-size: 11px;
+           font-weight: 600; text-transform: uppercase; letter-spacing: .04em; color: #6b7280; }
+      td { padding: 7px 0; border-bottom: 1px solid #f1f5f9; }
+      tbody tr:nth-child(even) { background: #fafafa; }
       .status { display: inline-flex; align-items: center; gap: 6px; color: #374151; }
       .status-dot { width: 8px; height: 8px; border-radius: 50%; background: #16a34a; }
     </style>
@@ -18,7 +35,12 @@
   <body>
     <nav class="nav">
       <a class="brand" href="/">Fantasy Waiver Assistant</a>
-      <span class="links"><a href="/players">Free agents</a></span>
+      <div class="tabs">
+        <a class="{{if and .Nav (eq .Nav "home")}}on{{end}}" href="/"
+           {{if and .Nav (eq .Nav "home")}}aria-current="page"{{end}}>Home</a>
+        <a class="{{if and .Nav (eq .Nav "players")}}on{{end}}" href="/players"
+           {{if and .Nav (eq .Nav "players")}}aria-current="page"{{end}}>Free agents</a>
+      </div>
     </nav>
     <main>{{template "content" .}}</main>
   </body>

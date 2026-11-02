@@ -27,7 +27,7 @@ There is no Makefile, CI, linter config, or codegen. `tmp/` is build output.
 main.go                    server wiring, /login and /callback, :8080
 internal/web               shared layout + Parse/Render/Fragment (page vs fragment)
 internal/home              home page handler
-internal/players           free-agent page, /hx/players/rows fragment, Yahoo source
+internal/players           free-agent page, /hx/players/panel fragment, Yahoo source
 internal/middleware        RequireSession wrapper for session-gated routes
 internal/shared            package name is "config" (dir is "shared")
 internal/auth              Yahoo OAuth: AuthCodeURL, Exchange, Refresh, Save
@@ -52,6 +52,8 @@ docs/yahoo-api-shapes.md   field-level reference for league/player resources
   startup with `web.Parse(featureFS, patterns...)`, which merges the shared layout.
 - Filter links set `hx-push-url` to the page URL (`/players?pos=PG`), never to the
   fragment URL, so reloads and the back button land on a full page.
+- The layout marks the active tab from a `Nav` value in the page data (`"home"`,
+  `"players"`). Set it in every page handler; fragments ignore it.
 
 ## Hard-won constraints
 

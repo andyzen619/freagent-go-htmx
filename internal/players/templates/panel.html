@@ -1,0 +1,28 @@
+{{define "panel"}}
+<div class="chips">
+  <a class="{{if not .Pos}}on{{end}}" href="/players" hx-get="/hx/players/panel" hx-target="#player-panel" hx-push-url="/players">All</a>
+  <a class="{{if eq .Pos "PG"}}on{{end}}" href="/players?pos=PG" hx-get="/hx/players/panel?pos=PG" hx-target="#player-panel" hx-push-url="/players?pos=PG">PG</a>
+  <a class="{{if eq .Pos "SG"}}on{{end}}" href="/players?pos=SG" hx-get="/hx/players/panel?pos=SG" hx-target="#player-panel" hx-push-url="/players?pos=SG">SG</a>
+  <a class="{{if eq .Pos "SF"}}on{{end}}" href="/players?pos=SF" hx-get="/hx/players/panel?pos=SF" hx-target="#player-panel" hx-push-url="/players?pos=SF">SF</a>
+  <a class="{{if eq .Pos "PF"}}on{{end}}" href="/players?pos=PF" hx-get="/hx/players/panel?pos=PF" hx-target="#player-panel" hx-push-url="/players?pos=PF">PF</a>
+  <a class="{{if eq .Pos "C"}}on{{end}}" href="/players?pos=C" hx-get="/hx/players/panel?pos=C" hx-target="#player-panel" hx-push-url="/players?pos=C">C</a>
+</div>
+<div style="overflow-x:auto">
+  <table>
+    <thead>
+      <tr><th>Player</th><th>Pos</th><th>Team</th></tr>
+    </thead>
+    <tbody>
+    {{if .Error}}
+      <tr><td colspan="3">{{.Error}}</td></tr>
+    {{else if .Players}}
+      {{range .Players}}
+      <tr><td>{{.Name}}</td><td>{{.Position}}</td><td>{{.Team}}</td></tr>
+      {{end}}
+    {{else}}
+      <tr><td colspan="3">No free agents found.</td></tr>
+    {{end}}
+    </tbody>
+  </table>
+</div>
+{{end}}

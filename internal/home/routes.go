@@ -39,5 +39,8 @@ func (h *Handler) Register(mux *http.ServeMux) {
 }
 
 func (h *Handler) index(w http.ResponseWriter, r *http.Request) {
-	web.Render(w, r, page, "content", map[string]any{"LoggedIn": h.login.LoggedIn()})
+	web.Render(w, r, page, "content", map[string]any{
+		"LoggedIn": h.login.LoggedIn(),
+		"Nav":      "home", // marks the active tab in the shared layout
+	})
 }

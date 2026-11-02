@@ -32,11 +32,12 @@ func New(source Source) *Handler {
 // Register adds the page and the fragment route to mux.
 func (h *Handler) Register(mux *http.ServeMux) {
 	mux.HandleFunc("GET /players", h.index)
-	mux.HandleFunc("GET /hx/players/rows", h.rows)
+	mux.HandleFunc("GET /hx/players/panel", h.panel)
 }
 
 // pageData is the template input for both the page and the rows fragment.
 type pageData struct {
+	Nav     string // active tab in the shared layout; ignored by the fragment
 	Pos     string
 	Players []Player
 	Error   string
@@ -52,17 +53,17 @@ func (h *Handler) load(r *http.Request) pageData {
 		if errors.Is(err, ErrNoLeague) {
 			msg = err.Error()
 		}
-		return pageData{Pos: pos, Error: msg}
+		return pageData{Nav: "players", Pos: pos, Error: msg}
 	}
-	return pageData{Pos: pos, Players: found}
+	return pageData{Nav: "players", Pos: pos, Players: found}
 }
 
-// index serves /players. Direct visits get the layout; htmx gets the rows.
+// index serves /players. Direct visits get the layout; htmx gets the panel.
 func (h *Handler) index(w http.ResponseWriter, r *http.Request) {
-	web.Render(w, r, page, "rows", h.load(r))
+	web.Render(w, r, page, "panel", h.load(r))
 }
 
-// rows serves /hx/players/rows, which only ever returns the fragment.
-func (h *Handler) rows(w http.ResponseWriter, r *http.Request) {
-	web.Fragment(w, page, "rows", h.load(r))
+// panel serves /hx/players/panel, which only ever returns the fragment.
+func (h *Handler) panel(w http.ResponseWriter, r *http.Request) {
+	web.Fragment(w, page, "panel", h.load(r))
 }

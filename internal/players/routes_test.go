@@ -33,31 +33,46 @@ func get(t *testing.T, source Source, path string, htmx bool) string {
 	return rec.Body.String()
 }
 
-var sample = []Player{{Name: "Bijan Robinson", Position: "RB", Team: "ATL"}}
+var sample = []Player{{Name: "Jayson Tatum", Position: "SF", Team: "BOS"}}
 
 func TestPage(t *testing.T) {
 	body := get(t, stubSource{players: sample}, "/players", false)
-	if !strings.Contains(body, "<html") || !strings.Contains(body, "Bijan Robinson") {
+	if !strings.Contains(body, "<html") || !strings.Contains(body, "Jayson Tatum") {
 		t.Errorf("page should render the layout with players, got %q", body)
 	}
 }
 
-func TestPageAsHtmxReturnsRows(t *testing.T) {
+// The layout marks the current section from pageData.Nav.
+func TestPageMarksPlayersTab(t *testing.T) {
+	body := get(t, stubSource{players: sample}, "/players", false)
+	if !strings.Contains(body, `aria-current="page"`) || !strings.Contains(body, `href="/players"`) {
+		t.Errorf("players tab should be marked active, got %q", body)
+	}
+}
+
+func TestPageAsHtmxReturnsPanel(t *testing.T) {
 	body := get(t, stubSource{players: sample}, "/players", true)
-	if strings.Contains(body, "<html") || !strings.Contains(body, "Bijan Robinson") {
-		t.Errorf("htmx response should be rows only, got %q", body)
+	if strings.Contains(body, "<html") || !strings.Contains(body, "Jayson Tatum") {
+		t.Errorf("htmx response should be the panel only, got %q", body)
 	}
 }
 
-func TestRowsFragment(t *testing.T) {
-	body := get(t, stubSource{players: sample}, "/hx/players/rows?pos=RB", true)
-	if strings.Contains(body, "<html") || !strings.Contains(body, "Bijan Robinson") {
-		t.Errorf("fragment should render rows only, got %q", body)
+func TestPanelFragment(t *testing.T) {
+	body := get(t, stubSource{players: sample}, "/hx/players/panel?pos=SF", true)
+	if strings.Contains(body, "<html") || !strings.Contains(body, "Jayson Tatum") {
+		t.Errorf("fragment should render the panel only, got %q", body)
 	}
 }
 
-func TestRowsDirectVisitStaysFragment(t *testing.T) {
-	body := get(t, stubSource{players: sample}, "/hx/players/rows", false)
+func TestPanelActiveChip(t *testing.T) {
+	body := get(t, stubSource{players: sample}, "/hx/players/panel?pos=SF", true)
+	if !strings.Contains(body, `href="/players?pos=SF"`) || !strings.Contains(body, `class="on"`) {
+		t.Errorf("active position chip should be marked, got %q", body)
+	}
+}
+
+func TestPanelDirectVisitStaysFragment(t *testing.T) {
+	body := get(t, stubSource{players: sample}, "/hx/players/panel", false)
 	if strings.Contains(body, "<html") {
 		t.Errorf("component route should never render the layout, got %q", body)
 	}
