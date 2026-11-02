@@ -3,17 +3,18 @@ package home
 
 import (
 	"embed"
-	"html/template"
-	"log"
 	"net/http"
+
+	"fantasy_waiver_assistant/internal/web"
 )
 
 //go:embed templates/index.html
 var templates embed.FS
 
-// page is parsed once at startup. The template is compiled into the binary, so
-// the server does not depend on the working directory.
-var page = template.Must(template.ParseFS(templates, "templates/index.html"))
+// page is parsed once at startup, merged over the shared layout. The template
+// is compiled into the binary, so the server does not depend on the working
+// directory.
+var page = web.Parse(templates, "templates/index.html")
 
 // LoginState reports whether a Yahoo session exists. *auth.Client satisfies it,
 // which keeps this package independent of the auth package.
@@ -37,10 +38,6 @@ func (h *Handler) Register(mux *http.ServeMux) {
 	mux.HandleFunc("/", h.index)
 }
 
-func (h *Handler) index(w http.ResponseWriter, _ *http.Request) {
-	w.Header().Set("Content-Type", "text/html; charset=utf-8")
-	if err := page.Execute(w, map[string]any{"LoggedIn": h.login.LoggedIn()}); err != nil {
-		log.Printf("home: render index: %v", err)
-		http.Error(w, "internal server error", http.StatusInternalServerError)
-	}
+func (h *Handler) index(w http.ResponseWriter, r *http.Request) {
+	web.Render(w, r, page, "content", map[string]any{"LoggedIn": h.login.LoggedIn()})
 }
