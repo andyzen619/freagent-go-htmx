@@ -1,0 +1,20 @@
+{{define "content"}}
+<div class="card w-full max-w-2xl bg-base-100 shadow-xl">
+  <div class="card-body">
+    <h2 class="card-title">Free agents</h2>
+    <div class="join">
+      <a class="btn join-item" href="/players" hx-get="/hx/players/rows" hx-target="#player-rows" hx-push-url="/players">All</a>
+      <a class="btn join-item" href="/players?pos=QB" hx-get="/hx/players/rows?pos=QB" hx-target="#player-rows" hx-push-url="/players?pos=QB">QB</a>
+      <a class="btn join-item" href="/players?pos=RB" hx-get="/hx/players/rows?pos=RB" hx-target="#player-rows" hx-push-url="/players?pos=RB">RB</a>
+      <a class="btn join-item" href="/players?pos=WR" hx-get="/hx/players/rows?pos=WR" hx-target="#player-rows" hx-push-url="/players?pos=WR">WR</a>
+      <a class="btn join-item" href="/players?pos=TE" hx-get="/hx/players/rows?pos=TE" hx-target="#player-rows" hx-push-url="/players?pos=TE">TE</a>
+    </div>
+    <table class="table">
+      <thead>
+        <tr><th>Player</th><th>Pos</th><th>Team</th></tr>
+      </thead>
+      <tbody id="player-rows">{{template "rows" .}}</tbody>
+    </table>
+  </div>
+</div>
+{{end}}

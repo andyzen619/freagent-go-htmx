@@ -1,6 +1,7 @@
 package main
 
 import (
+	"context"
 	"crypto/rand"
 	"fmt"
 	"log"
@@ -9,7 +10,9 @@ import (
 	"fantasy_waiver_assistant/internal/auth"
 	"fantasy_waiver_assistant/internal/home"
 	"fantasy_waiver_assistant/internal/middleware"
+	"fantasy_waiver_assistant/internal/players"
 	config "fantasy_waiver_assistant/internal/shared"
+	"fantasy_waiver_assistant/internal/yahoo"
 )
 
 func main() {
@@ -25,6 +28,17 @@ func main() {
 	// /callback stay public on mux, which matches their patterns first.
 	app := http.NewServeMux()
 	home.New(client).Register(app)
+
+	// Yahoo calls use the in-memory OAuth token. Every route on app is gated by
+	// RequireSession, so a token is present by the time a handler runs.
+	yahooClient := yahoo.NewClient(func(context.Context) (string, error) {
+		if token := client.Token(); token != nil {
+			return token.AccessToken, nil
+		}
+		return "", yahoo.ErrUnauthorized
+	})
+	players.New(players.NewYahooSource(yahooClient, cfg.LeagueKey)).Register(app)
+
 	mux.Handle("/", middleware.RequireSession(client, app))
 
 	mux.HandleFunc("/login", func(w http.ResponseWriter, r *http.Request) {
