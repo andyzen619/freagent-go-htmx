@@ -6,7 +6,7 @@ import (
 )
 
 func TestMockSourceReturnsAllPlayers(t *testing.T) {
-	found, err := NewMockSource().FreeAgents(context.Background(), "")
+	found, err := NewMockSource().FreeAgents(context.Background())
 	if err != nil {
 		t.Fatalf("FreeAgents: %v", err)
 	}
@@ -15,37 +15,35 @@ func TestMockSourceReturnsAllPlayers(t *testing.T) {
 	}
 }
 
-func TestMockSourceFiltersByPosition(t *testing.T) {
-	found, err := NewMockSource().FreeAgents(context.Background(), "C")
-	if err != nil {
-		t.Fatalf("FreeAgents: %v", err)
-	}
-	if len(found) != 2 {
-		t.Fatalf("centers = %d, want 2", len(found))
-	}
-	for _, player := range found {
-		if player.Position != "C" {
-			t.Errorf("%s has position %q, want C", player.Name, player.Position)
-		}
-	}
-}
+func TestMockSourceIncludesComparisonStats(t *testing.T) {
+	found, _ := NewMockSource().FreeAgents(context.Background())
 
-func TestMockSourceUnknownPosition(t *testing.T) {
-	found, err := NewMockSource().FreeAgents(context.Background(), "XX")
-	if err != nil {
-		t.Fatalf("FreeAgents: %v", err)
-	}
-	if len(found) != 0 {
-		t.Errorf("players = %d, want 0", len(found))
+	for _, player := range found {
+		stats := player.Stats
+		if player.Name == "" || player.Position == "" || player.Team == "" {
+			t.Errorf("identity incomplete: %+v", player)
+		}
+		if stats.Depth == "" || stats.Depth == missingStat {
+			t.Errorf("%s has no mock depth ranking", player.Name)
+		}
+		for label, value := range map[string]string{
+			"MPG": stats.MPG, "FG%": stats.FGPercent, "FT%": stats.FTPercent,
+			"3PM": stats.ThreePM, "PTS": stats.Points, "REB": stats.Rebounds,
+			"AST": stats.Assists, "STL": stats.Steals, "BLK": stats.Blocks, "TO": stats.Turnovers,
+		} {
+			if value == "" || value == missingStat {
+				t.Errorf("%s has no %s value", player.Name, label)
+			}
+		}
 	}
 }
 
 func TestMockSourceReturnsACopy(t *testing.T) {
 	source := NewMockSource()
-	first, _ := source.FreeAgents(context.Background(), "")
+	first, _ := source.FreeAgents(context.Background())
 	first[0].Name = "Changed"
 
-	second, _ := source.FreeAgents(context.Background(), "")
+	second, _ := source.FreeAgents(context.Background())
 	if second[0].Name == "Changed" {
 		t.Error("callers should not be able to mutate the sample data")
 	}

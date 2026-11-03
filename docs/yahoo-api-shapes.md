@@ -259,6 +259,28 @@ player_points           { coverage_type, season|week|date, total }   # league co
 `value` is a **string** and can be `-` for DNP. In roster/matchup contexts there is also
 `selected_position` = `{position, is_flex?}`.
 
+For NBA nine-category rows, `league/{key}/players;...;out=stats` carries season
+**totals** keyed by these stat ids. The players page divides counting stats and
+`MIN` (id 2) by games played (id 0) to display per-game values.
+
+| Display | Stat id | Yahoo name |
+|---|---|---|
+| GP | 0 | Games Played |
+| MPG | 2 ÷ GP | Minutes Played |
+| FG% | 5 | Field Goal Percentage (ratio, e.g. `0.487`) |
+| FT% | 8 | Free Throw Percentage (ratio) |
+| 3PM | 10 | 3-point Shots Made |
+| PTS | 12 | Points Scored |
+| REB | 15 | Total Rebounds |
+| AST | 16 | Assists |
+| STL | 17 | Steals |
+| BLK | 18 | Blocked Shots |
+| TO | 19 | Turnovers |
+
+Yahoo's player resources here do not include an NBA team depth ranking. The
+players UI shows `—` for live depth rather than inventing one; mock data supplies
+position-specific rankings for UI development.
+
 ### Ownership, percent_owned, draft_analysis
 
 ```

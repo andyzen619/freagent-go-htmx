@@ -16,7 +16,7 @@ var page = web.Parse(templates, "templates/*.html")
 
 // Source loads the free agents shown on the players page.
 type Source interface {
-	FreeAgents(ctx context.Context, pos string) ([]Player, error)
+	FreeAgents(ctx context.Context) ([]Player, error)
 }
 
 // Handler serves the players page and its rows fragment.
@@ -43,26 +43,39 @@ func (h *Handler) Register(mux *http.ServeMux) {
 
 // pageData is the template input for both the page and the rows fragment.
 type pageData struct {
-	Nav     string // active tab in the shared layout; ignored by the fragment
-	Pos     string
-	Players []Player
-	Error   string
-	Mock    bool
+	Nav           string // active tab in the shared layout; ignored by the fragment
+	Players       []PlayerView
+	Error         string
+	Mock          bool
+	PrimarySort   SortControl
+	SecondarySort SortControl
 }
 
-// load reads the ?pos filter and resolves the matching players.
+// load resolves the free agents shown on the page.
 func (h *Handler) load(r *http.Request) pageData {
-	pos := r.URL.Query().Get("pos")
-	found, err := h.source.FreeAgents(r.Context(), pos)
+	state := parseSort(r.URL.Query())
+	primary, secondary := sortControls(state)
+	data := pageData{
+		Nav:           "players",
+		Mock:          h.mock,
+		PrimarySort:   primary,
+		SecondarySort: secondary,
+	}
+
+	found, err := h.source.FreeAgents(r.Context())
 	if err != nil {
-		log.Printf("players: load %q: %v", pos, err)
+		log.Printf("players: load: %v", err)
 		msg := "Could not load free agents."
 		if errors.Is(err, ErrNoLeague) {
 			msg = err.Error()
 		}
-		return pageData{Nav: "players", Pos: pos, Error: msg, Mock: h.mock}
+		data.Error = msg
+		return data
 	}
-	return pageData{Nav: "players", Pos: pos, Players: found, Mock: h.mock}
+
+	sortPlayers(found, state)
+	data.Players = playerViews(found, displayColumns(state))
+	return data
 }
 
 // index serves /players. Direct visits get the layout; htmx gets the panel.
