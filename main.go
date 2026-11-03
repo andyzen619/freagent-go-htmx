@@ -11,6 +11,7 @@ import (
 	"fantasy_waiver_assistant/internal/home"
 	"fantasy_waiver_assistant/internal/middleware"
 	"fantasy_waiver_assistant/internal/players"
+	"fantasy_waiver_assistant/internal/session"
 	config "fantasy_waiver_assistant/internal/shared"
 	"fantasy_waiver_assistant/internal/yahoo"
 )
@@ -22,24 +23,35 @@ func main() {
 	}
 	client := auth.New(cfg)
 
-	mux := http.NewServeMux()
-
-	// app holds pages and fragments that need a Yahoo session; /login and
-	// /callback stay public on mux, which matches their patterns first.
-	app := http.NewServeMux()
-	home.New(client).Register(app)
-
-	// Yahoo calls use the in-memory OAuth token. Every route on app is gated by
-	// RequireSession, so a token is present by the time a handler runs.
 	yahooClient := yahoo.NewClient(func(context.Context) (string, error) {
 		if token := client.Token(); token != nil {
 			return token.AccessToken, nil
 		}
 		return "", yahoo.ErrUnauthorized
 	})
-	players.New(players.NewYahooSource(yahooClient, cfg.LeagueKey)).Register(app)
+	validator := session.New(client, yahooClient)
 
-	mux.Handle("/", middleware.RequireSession(client, app))
+	mux := http.NewServeMux()
+
+	// The home page is public so it can report a logged-out or unverified
+	// session. /login and /callback are public as well.
+	homePage := home.New(validator)
+	homePage.RegisterPublic(mux)
+
+	// app holds pages and fragments that need a verified Yahoo session.
+	app := http.NewServeMux()
+	homePage.Register(app)
+	if cfg.PlayersSource == "mock" {
+		// Mock players are deterministic local data and need no Yahoo session,
+		// so keep them public for UI development.
+		players.NewMock(players.NewMockSource()).Register(mux)
+	} else {
+		players.New(players.NewYahooSource(yahooClient, cfg.LeagueKey)).Register(app)
+	}
+
+	// Every route on app first checks the token against Yahoo. Unknown paths
+	// fall through to the home page once the session is verified.
+	mux.Handle("/", middleware.RequireSession(validator, app))
 
 	mux.HandleFunc("/login", func(w http.ResponseWriter, r *http.Request) {
 		state := rand.Text()
@@ -66,7 +78,6 @@ func main() {
 			http.Error(w, err.Error(), http.StatusInternalServerError)
 			return
 		}
-		fmt.Println("access token:", client.Token().AccessToken)
 		http.Redirect(w, r, "/", http.StatusFound)
 	})
 

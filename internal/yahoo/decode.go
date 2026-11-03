@@ -21,9 +21,10 @@ func (e *APIError) Error() string {
 }
 
 // Envelope is the <fantasy_content> root every response shares. Exactly one of
-// League, Players or Player is set, depending on the request.
+// Users, League, Players or Player is set, depending on the request.
 type Envelope struct {
 	XMLName xml.Name  `xml:"fantasy_content"`
+	Users   *Users    `xml:"users"`
 	League  *League   `xml:"league"`
 	Players *Players  `xml:"players"`
 	Player  *Player   `xml:"player"`

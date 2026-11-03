@@ -95,6 +95,10 @@ func (f PlayerFilter) encode() string {
 	return b.String()
 }
 
+func currentUserPath() string {
+	return "/users;use_login=1"
+}
+
 func leaguePath(leagueKey string, out ...string) string {
 	return "/league/" + escapeSegment(leagueKey) + outParam(out)
 }

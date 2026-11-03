@@ -20,9 +20,19 @@ func (s stubSource) FreeAgents(context.Context, string) ([]Player, error) {
 
 func get(t *testing.T, source Source, path string, htmx bool) string {
 	t.Helper()
+	return getWith(t, New(source), path, htmx)
+}
+
+func getMock(t *testing.T, path string, htmx bool) string {
+	t.Helper()
+	return getWith(t, NewMock(NewMockSource()), path, htmx)
+}
+
+func getWith(t *testing.T, handler *Handler, path string, htmx bool) string {
+	t.Helper()
 
 	mux := http.NewServeMux()
-	New(source).Register(mux)
+	handler.Register(mux)
 
 	req := httptest.NewRequest(http.MethodGet, path, nil)
 	if htmx {
@@ -82,5 +92,28 @@ func TestMissingLeagueKey(t *testing.T) {
 	body := get(t, stubSource{err: ErrNoLeague}, "/players", false)
 	if !strings.Contains(body, "YAHOO_LEAGUE_KEY") {
 		t.Errorf("error should mention the missing league key, got %q", body)
+	}
+}
+
+func TestMockPageShowsLabelAndPlayers(t *testing.T) {
+	body := getMock(t, "/players", false)
+	for _, want := range []string{"Mock data — not from Yahoo", "Malik Carter"} {
+		if !strings.Contains(body, want) {
+			t.Errorf("mock page missing %q", want)
+		}
+	}
+}
+
+func TestMockFragmentFiltersPlayers(t *testing.T) {
+	body := getMock(t, "/hx/players/panel?pos=C", true)
+	if !strings.Contains(body, "Noah Bennett") || strings.Contains(body, "Malik Carter") {
+		t.Errorf("mock center filter returned wrong players, got %q", body)
+	}
+}
+
+func TestLivePageHasNoMockLabel(t *testing.T) {
+	body := get(t, stubSource{players: sample}, "/players", false)
+	if strings.Contains(body, "Mock data") {
+		t.Errorf("live page should not be labelled as mock data, got %q", body)
 	}
 }

@@ -1,10 +1,12 @@
-// Package home serves the app's landing page.
+// Package home serves the app's landing page and login status.
 package home
 
 import (
+	"context"
 	"embed"
 	"net/http"
 
+	"fantasy_waiver_assistant/internal/session"
 	"fantasy_waiver_assistant/internal/web"
 )
 
@@ -16,31 +18,40 @@ var templates embed.FS
 // directory.
 var page = web.Parse(templates, "templates/page.html")
 
-// LoginState reports whether a Yahoo session exists. *auth.Client satisfies it,
-// which keeps this package independent of the auth package.
-type LoginState interface {
-	LoggedIn() bool
+// SessionValidator checks whether the Yahoo token is still accepted.
+type SessionValidator interface {
+	Validate(ctx context.Context) session.Status
 }
 
 // Handler serves the home page.
 type Handler struct {
-	login LoginState
+	validator SessionValidator
 }
 
-// New returns a Handler that renders the page for the given login state.
-func New(login LoginState) *Handler {
-	return &Handler{login: login}
+// New returns a Handler that renders the verified login state.
+func New(validator SessionValidator) *Handler {
+	return &Handler{validator: validator}
 }
 
-// Register adds the home route to mux. The pattern is a catch-all: any path not
-// matched by a more specific route renders the home page.
+// RegisterPublic adds the unauthenticated home route.
+func (h *Handler) RegisterPublic(mux *http.ServeMux) {
+	mux.HandleFunc("GET /{$}", h.index)
+}
+
+// Register adds a fallback for paths not matched by a more specific route.
+// Those requests are still gated by middleware.RequireSession.
 func (h *Handler) Register(mux *http.ServeMux) {
 	mux.HandleFunc("/", h.index)
 }
 
 func (h *Handler) index(w http.ResponseWriter, r *http.Request) {
+	status, ok := session.FromContext(r.Context())
+	if !ok {
+		status = h.validator.Validate(r.Context())
+	}
+
 	web.Render(w, r, page, "content", map[string]any{
-		"LoggedIn": h.login.LoggedIn(),
-		"Nav":      "home", // marks the active tab in the shared layout
+		"Status": status.String(),
+		"Nav":    "home", // marks the active tab in the shared layout
 	})
 }

@@ -40,6 +40,72 @@ func testClient(baseURL string, token TokenSource) *Client {
 	return c
 }
 
+func TestCurrentUserRequest(t *testing.T) {
+	srv, got := newTestServer(t, "current_user.xml")
+	c := testClient(srv.URL, StaticToken("tok"))
+
+	user, err := c.CurrentUser(context.Background())
+	if err != nil {
+		t.Fatalf("CurrentUser: %v", err)
+	}
+	if got.auth != "Bearer tok" {
+		t.Errorf("Authorization = %q", got.auth)
+	}
+	if got.uri != "/users;use_login=1" {
+		t.Errorf("URI = %q", got.uri)
+	}
+	if user.GUID != "ABCDEFGHIJKLMNOPQRSTUVWXYZ" {
+		t.Errorf("GUID = %q", user.GUID)
+	}
+}
+
+func TestForbidden(t *testing.T) {
+	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		w.Header().Set("Content-Type", "application/xml")
+		w.WriteHeader(http.StatusForbidden)
+		_, _ = w.Write([]byte(`<error><description>This application is not authorized to perform this action.</description></error>`))
+	}))
+	t.Cleanup(srv.Close)
+
+	c := testClient(srv.URL, StaticToken("tok"))
+	_, err := c.CurrentUser(context.Background())
+	if !errors.Is(err, ErrForbidden) {
+		t.Fatalf("err = %v, want ErrForbidden", err)
+	}
+	var apiErr *APIError
+	if !errors.As(err, &apiErr) {
+		t.Fatalf("err = %v, want wrapped *APIError", err)
+	}
+	if !strings.Contains(apiErr.Description, "not authorized") {
+		t.Errorf("description = %q", apiErr.Description)
+	}
+}
+
+func TestCurrentUserWithoutAUser(t *testing.T) {
+	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		w.Header().Set("Content-Type", "application/xml")
+		_, _ = w.Write([]byte(`<fantasy_content><users count="0"></users></fantasy_content>`))
+	}))
+	t.Cleanup(srv.Close)
+
+	c := testClient(srv.URL, StaticToken("tok"))
+	if _, err := c.CurrentUser(context.Background()); err == nil {
+		t.Fatal("CurrentUser with no user should fail")
+	}
+}
+
+func TestCurrentUserUnauthorized(t *testing.T) {
+	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		http.Error(w, "unauthorized", http.StatusUnauthorized)
+	}))
+	t.Cleanup(srv.Close)
+
+	c := testClient(srv.URL, StaticToken("expired"))
+	if _, err := c.CurrentUser(context.Background()); !errors.Is(err, ErrUnauthorized) {
+		t.Fatalf("err = %v, want ErrUnauthorized", err)
+	}
+}
+
 func TestLeagueRequest(t *testing.T) {
 	srv, got := newTestServer(t, "league.xml")
 	c := testClient(srv.URL, StaticToken("tok"))

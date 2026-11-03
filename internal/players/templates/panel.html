@@ -1,4 +1,5 @@
 {{define "panel"}}
+{{if .Mock}}<div class="mock-data" role="status">Mock data — not from Yahoo</div>{{end}}
 <div class="chips">
   <a class="{{if not .Pos}}on{{end}}" href="/players" hx-get="/hx/players/panel" hx-target="#player-panel" hx-push-url="/players">All</a>
   <a class="{{if eq .Pos "PG"}}on{{end}}" href="/players?pos=PG" hx-get="/hx/players/panel?pos=PG" hx-target="#player-panel" hx-push-url="/players?pos=PG">PG</a>

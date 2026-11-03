@@ -1,27 +1,43 @@
 // Package middleware provides HTTP wrappers shared by the app's routes.
 package middleware
 
-import "net/http"
+import (
+	"context"
+	"net/http"
 
-// LoginState reports whether a Yahoo session exists. *auth.Client satisfies it,
-// which keeps this package independent of the auth package.
-type LoginState interface {
-	LoggedIn() bool
+	"fantasy_waiver_assistant/internal/session"
+)
+
+// SessionValidator reports whether the Yahoo session is actually usable.
+type SessionValidator interface {
+	Validate(ctx context.Context) session.Status
 }
 
-// RequireSession lets logged-in requests through. Page visits are redirected to
-// /login; htmx requests instead get an HX-Redirect header so the client
-// navigates there without swapping a login page into the target.
-func RequireSession(login LoginState, next http.Handler) http.Handler {
+// RequireSession lets verified requests through. Page visits are redirected to
+// /login when logged out; htmx requests instead get an HX-Redirect header so the
+// client navigates there without swapping a login page into the target.
+// Missing Yahoo API permissions also return to the home page, which explains
+// the problem. A Yahoo outage returns 503 and leaves the token alone.
+func RequireSession(validator SessionValidator, next http.Handler) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		if login.LoggedIn() {
-			next.ServeHTTP(w, r)
-			return
+		status := validator.Validate(r.Context())
+		switch status {
+		case session.Verified:
+			next.ServeHTTP(w, r.WithContext(session.WithStatus(r.Context(), status)))
+		case session.LoggedOut:
+			if r.Header.Get("HX-Request") == "true" {
+				w.Header().Set("HX-Redirect", "/login")
+				return
+			}
+			http.Redirect(w, r, "/login", http.StatusFound)
+		case session.AccessDenied:
+			if r.Header.Get("HX-Request") == "true" {
+				w.Header().Set("HX-Redirect", "/")
+				return
+			}
+			http.Redirect(w, r, "/", http.StatusSeeOther)
+		default:
+			http.Error(w, "Could not verify your Yahoo login. Try again shortly.", http.StatusServiceUnavailable)
 		}
-		if r.Header.Get("HX-Request") == "true" {
-			w.Header().Set("HX-Redirect", "/login")
-			return
-		}
-		http.Redirect(w, r, "/login", http.StatusFound)
 	})
 }

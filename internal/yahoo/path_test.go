@@ -39,6 +39,12 @@ func TestPlayerFilterEncoding(t *testing.T) {
 	}
 }
 
+func TestCurrentUserPath(t *testing.T) {
+	if got := currentUserPath(); got != "/users;use_login=1" {
+		t.Errorf("path = %q", got)
+	}
+}
+
 func TestLeaguePath(t *testing.T) {
 	if got := leaguePath("470.l.1000"); got != "/league/470.l.1000" {
 		t.Errorf("path = %q", got)

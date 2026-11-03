@@ -29,6 +29,7 @@ internal/web               shared layout + Parse/Render/Fragment (page vs fragme
 internal/home              home page handler
 internal/players           free-agent page, /hx/players/panel fragment, Yahoo source
 internal/middleware        RequireSession wrapper for session-gated routes
+internal/session           Yahoo token verification and status propagation
 internal/shared            package name is "config" (dir is "shared")
 internal/auth              Yahoo OAuth: AuthCodeURL, Exchange, Refresh, Save
 internal/yahoo             read-only Fantasy Sports API client (XML)
@@ -74,6 +75,11 @@ docs/yahoo-api-shapes.md   field-level reference for league/player resources
   `.tokens.json` (0600) but startup never loads it, so a restart means logged out.
   `main.go` adapts it to `yahoo.Client`'s `TokenSource`; reuse that adapter for new
   authenticated Yahoo calls instead of adding a second one.
+- `internal/session` verifies a token against `/users;use_login=1`; token
+  existence alone is not proof of a working login. Verified status is passed
+  through the request context so middleware and handlers do not validate twice.
+  A Yahoo 403 is `AccessDenied`, not a logout: it means the Yahoo app lacks
+  Fantasy Sports permission and the home page shows how to fix it.
 - Every feature embeds its templates with `//go:embed` and parses them once at
   startup via `web.Parse`, so the binary does not depend on the working directory.
   Do not reintroduce repo-root-relative `template.ParseFiles(...)`.
@@ -81,6 +87,8 @@ docs/yahoo-api-shapes.md   field-level reference for league/player resources
   already set (real env wins), and reports all missing required vars in one error.
   Required: `YAHOO_CLIENT_ID`, `YAHOO_CLIENT_SECRET`, `YAHOO_REDIRECT_URI`.
   Optional: `YAHOO_LEAGUE_KEY` (e.g. `470.l.123`), used by the players page.
+  `PLAYERS_SOURCE=mock` serves built-in sample players from a public `/players`;
+  the default `yahoo` keeps players behind a verified session.
 - `YAHOO_REDIRECT_URI` must match the Yahoo app dashboard character for character;
   local dev uses an ngrok URL (see `.env.example`).
 

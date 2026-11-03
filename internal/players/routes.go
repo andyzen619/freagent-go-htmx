@@ -22,11 +22,17 @@ type Source interface {
 // Handler serves the players page and its rows fragment.
 type Handler struct {
 	source Source
+	mock   bool
 }
 
 // New returns a Handler that reads players from source.
 func New(source Source) *Handler {
 	return &Handler{source: source}
+}
+
+// NewMock returns a Handler that labels the page as mock data.
+func NewMock(source Source) *Handler {
+	return &Handler{source: source, mock: true}
 }
 
 // Register adds the page and the fragment route to mux.
@@ -41,6 +47,7 @@ type pageData struct {
 	Pos     string
 	Players []Player
 	Error   string
+	Mock    bool
 }
 
 // load reads the ?pos filter and resolves the matching players.
@@ -53,9 +60,9 @@ func (h *Handler) load(r *http.Request) pageData {
 		if errors.Is(err, ErrNoLeague) {
 			msg = err.Error()
 		}
-		return pageData{Nav: "players", Pos: pos, Error: msg}
+		return pageData{Nav: "players", Pos: pos, Error: msg, Mock: h.mock}
 	}
-	return pageData{Nav: "players", Pos: pos, Players: found}
+	return pageData{Nav: "players", Pos: pos, Players: found, Mock: h.mock}
 }
 
 // index serves /players. Direct visits get the layout; htmx gets the panel.
