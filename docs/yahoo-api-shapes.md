@@ -34,6 +34,37 @@ Requests are read-only (`GET`). Sub-resources are path segments or `;out=a,b` pa
 
 ---
 
+## Users
+
+`GET /fantasy/v2/users;use_login=1` — the account behind the access token.
+This is the lightweight request used to verify that Yahoo still accepts a token.
+If the token is missing, expired or revoked, Yahoo returns HTTP 401 (the client
+maps this to `yahoo.ErrUnauthorized`).
+
+```xml
+<fantasy_content>
+  <users count="1">
+    <user>
+      <guid>ABCDEFGHIJKLMNOPQRSTUVWXYZ</guid>
+    </user>
+  </users>
+</fantasy_content>
+```
+
+Current-user fields:
+
+| Field | Type | Notes |
+|---|---|---|
+| `guid` | string | Yahoo account identifier; opaque, keep as string |
+
+A successful `users` response with one user means the token was accepted and the
+login is verified. Do not treat the mere presence of a stored token as proof.
+HTTP 403 means the Yahoo application itself lacks Fantasy Sports API permission;
+the client reports `yahoo.ErrForbidden`, and the app shows setup instructions
+rather than discarding the valid token.
+
+---
+
 ## League resource
 
 `GET /fantasy/v2/league/{league_key}` — default sub-resource: `metadata`.
@@ -228,6 +259,28 @@ player_points           { coverage_type, season|week|date, total }   # league co
 `value` is a **string** and can be `-` for DNP. In roster/matchup contexts there is also
 `selected_position` = `{position, is_flex?}`.
 
+For NBA nine-category rows, `league/{key}/players;...;out=stats` carries season
+**totals** keyed by these stat ids. The players page divides counting stats and
+`MIN` (id 2) by games played (id 0) to display per-game values.
+
+| Display | Stat id | Yahoo name |
+|---|---|---|
+| GP | 0 | Games Played |
+| MPG | 2 ÷ GP | Minutes Played |
+| FG% | 5 | Field Goal Percentage (ratio, e.g. `0.487`) |
+| FT% | 8 | Free Throw Percentage (ratio) |
+| 3PM | 10 | 3-point Shots Made |
+| PTS | 12 | Points Scored |
+| REB | 15 | Total Rebounds |
+| AST | 16 | Assists |
+| STL | 17 | Steals |
+| BLK | 18 | Blocked Shots |
+| TO | 19 | Turnovers |
+
+Yahoo's player resources here do not include an NBA team depth ranking. The
+players UI shows `—` for live depth rather than inventing one; mock data supplies
+position-specific rankings for UI development.
+
 ### Ownership, percent_owned, draft_analysis
 
 ```
@@ -327,10 +380,10 @@ Implemented in `internal/yahoo/` (XML decoding, no third-party dependencies):
 
 | File | Contents |
 |---|---|
-| `types.go` | `League`, `LeagueSettings`, `Player`, `Players`, `Ownership`, `PercentOwned`, `PlayerStats`, ... |
+| `types.go` | `Users`, `User`, `League`, `LeagueSettings`, `Player`, `Players`, `Ownership`, `PercentOwned`, `PlayerStats`, ... |
 | `decode.go` | `Envelope` (`<fantasy_content>` root), `APIError`, `decodeResponse` |
 | `path.go` | key builders, `PlayerFilter` (status/position/sort/pagination/out), path encoding |
-| `client.go` | `Client`, `TokenSource`, resource methods, `ErrUnauthorized` |
+| `client.go` | `Client`, `TokenSource`, resource methods, `CurrentUser`, `ErrUnauthorized` |
 
 ```go
 c := yahoo.NewClient(func(ctx context.Context) (string, error) {

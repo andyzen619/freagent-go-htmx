@@ -49,6 +49,19 @@ func findRosterPosition(positions []RosterPosition, name string) *RosterPosition
 	return nil
 }
 
+func TestDecodeCurrentUser(t *testing.T) {
+	env := decodeTestdata(t, "current_user.xml")
+	if env.Users == nil || len(env.Users.Users) != 1 {
+		t.Fatalf("users = %+v", env.Users)
+	}
+	if env.Users.Count != 1 {
+		t.Errorf("Count = %d", env.Users.Count)
+	}
+	if got := env.Users.Users[0].GUID; got != "ABCDEFGHIJKLMNOPQRSTUVWXYZ" {
+		t.Errorf("GUID = %q", got)
+	}
+}
+
 func TestDecodeLeague(t *testing.T) {
 	env := decodeTestdata(t, "league.xml")
 	lg := env.League

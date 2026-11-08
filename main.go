@@ -1,14 +1,19 @@
 package main
 
 import (
+	"context"
 	"crypto/rand"
 	"fmt"
-	"html/template"
 	"log"
 	"net/http"
 
 	"fantasy_waiver_assistant/internal/auth"
+	"fantasy_waiver_assistant/internal/home"
+	"fantasy_waiver_assistant/internal/middleware"
+	"fantasy_waiver_assistant/internal/players"
+	"fantasy_waiver_assistant/internal/session"
 	config "fantasy_waiver_assistant/internal/shared"
+	"fantasy_waiver_assistant/internal/yahoo"
 )
 
 func main() {
@@ -18,19 +23,43 @@ func main() {
 	}
 	client := auth.New(cfg)
 
-	http.HandleFunc("/", func(w http.ResponseWriter, r *http.Request) {
-		tmpl := template.Must(template.ParseFiles("internal/home/templates/index.html"))
-		w.Header().Set("Content-Type", "text/html")
-		_ = tmpl.Execute(w, map[string]any{"LoggedIn": client.LoggedIn()})
+	yahooClient := yahoo.NewClient(func(context.Context) (string, error) {
+		if token := client.Token(); token != nil {
+			return token.AccessToken, nil
+		}
+		return "", yahoo.ErrUnauthorized
 	})
+	validator := session.New(client, yahooClient)
 
-	http.HandleFunc("/login", func(w http.ResponseWriter, r *http.Request) {
+	mux := http.NewServeMux()
+
+	// The home page is public so it can report a logged-out or unverified
+	// session. /login and /callback are public as well.
+	homePage := home.New(validator)
+	homePage.RegisterPublic(mux)
+
+	// app holds pages and fragments that need a verified Yahoo session.
+	app := http.NewServeMux()
+	homePage.Register(app)
+	if cfg.PlayersSource == "mock" {
+		// Mock players are deterministic local data and need no Yahoo session,
+		// so keep them public for UI development.
+		players.NewMock(players.NewMockSource()).Register(mux)
+	} else {
+		players.New(players.NewYahooSource(yahooClient, cfg.LeagueKey)).Register(app)
+	}
+
+	// Every route on app first checks the token against Yahoo. Unknown paths
+	// fall through to the home page once the session is verified.
+	mux.Handle("/", middleware.RequireSession(validator, app))
+
+	mux.HandleFunc("/login", func(w http.ResponseWriter, r *http.Request) {
 		state := rand.Text()
 		http.SetCookie(w, &http.Cookie{Name: "oauth_state", Value: state, Path: "/", HttpOnly: true})
 		http.Redirect(w, r, client.AuthCodeURL(state), http.StatusFound)
 	})
 
-	http.HandleFunc("/callback", func(w http.ResponseWriter, r *http.Request) {
+	mux.HandleFunc("/callback", func(w http.ResponseWriter, r *http.Request) {
 		c, err := r.Cookie("oauth_state")
 		if err != nil || c.Value != r.URL.Query().Get("state") {
 			http.Error(w, "invalid state", http.StatusBadRequest)
@@ -49,12 +78,11 @@ func main() {
 			http.Error(w, err.Error(), http.StatusInternalServerError)
 			return
 		}
-		fmt.Println("access token:", client.Token().AccessToken)
 		http.Redirect(w, r, "/", http.StatusFound)
 	})
 
 	fmt.Println("Server Running on 8080")
-	if err := http.ListenAndServe(":8080", nil); err != nil {
+	if err := http.ListenAndServe(":8080", mux); err != nil {
 		fmt.Println(err)
 	}
 }

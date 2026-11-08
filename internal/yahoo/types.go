@@ -1,5 +1,16 @@
 package yahoo
 
+// Users is the users collection returned by the current-user endpoint.
+type Users struct {
+	Count int    `xml:"count,attr"`
+	Users []User `xml:"user"`
+}
+
+// User identifies the Yahoo account behind an access token.
+type User struct {
+	GUID string `xml:"guid"`
+}
+
 // Name is a player name.
 type Name struct {
 	Full       string `xml:"full"`

@@ -11,6 +11,7 @@ func TestLoad(t *testing.T) {
 		t.Setenv("YAHOO_CLIENT_ID", "")
 		t.Setenv("YAHOO_CLIENT_SECRET", "")
 		t.Setenv("YAHOO_REDIRECT_URI", "")
+		t.Setenv("PLAYERS_SOURCE", "")
 
 		_, err := Load()
 		if err == nil {
@@ -27,6 +28,7 @@ func TestLoad(t *testing.T) {
 		t.Setenv("YAHOO_CLIENT_ID", "id")
 		t.Setenv("YAHOO_CLIENT_SECRET", "secret")
 		t.Setenv("YAHOO_REDIRECT_URI", "https://example.test/callback")
+		t.Setenv("PLAYERS_SOURCE", "")
 
 		cfg, err := Load()
 		if err != nil {
@@ -37,6 +39,36 @@ func TestLoad(t *testing.T) {
 		}
 		if cfg.RedirectURI != "https://example.test/callback" {
 			t.Errorf("RedirectURI = %q", cfg.RedirectURI)
+		}
+		if cfg.PlayersSource != "yahoo" {
+			t.Errorf("PlayersSource = %q, want yahoo", cfg.PlayersSource)
+		}
+	})
+
+	t.Run("mock players source", func(t *testing.T) {
+		t.Setenv("YAHOO_CLIENT_ID", "id")
+		t.Setenv("YAHOO_CLIENT_SECRET", "secret")
+		t.Setenv("YAHOO_REDIRECT_URI", "https://example.test/callback")
+		t.Setenv("PLAYERS_SOURCE", " MOCK ")
+
+		cfg, err := Load()
+		if err != nil {
+			t.Fatalf("unexpected error: %v", err)
+		}
+		if cfg.PlayersSource != "mock" {
+			t.Errorf("PlayersSource = %q, want mock", cfg.PlayersSource)
+		}
+	})
+
+	t.Run("invalid players source", func(t *testing.T) {
+		t.Setenv("YAHOO_CLIENT_ID", "id")
+		t.Setenv("YAHOO_CLIENT_SECRET", "secret")
+		t.Setenv("YAHOO_REDIRECT_URI", "https://example.test/callback")
+		t.Setenv("PLAYERS_SOURCE", "fixture")
+
+		_, err := Load()
+		if err == nil || !strings.Contains(err.Error(), "PLAYERS_SOURCE") {
+			t.Fatalf("err = %v, want PLAYERS_SOURCE error", err)
 		}
 	})
 }

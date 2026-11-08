@@ -1,0 +1,66 @@
+{{define "panel"}}
+{{if .Mock}}<div class="mock-data" role="status">Mock data — not from Yahoo</div>{{end}}
+<form class="sort-controls" method="get" action="/players"
+      hx-get="/players" hx-trigger="change" hx-target="#player-panel" hx-push-url="true">
+  <input type="hidden" name="dir" value="{{.PrimarySort.Direction}}">
+  {{if .SecondarySort.Key}}<input type="hidden" name="then_dir" value="{{.SecondarySort.Direction}}">{{end}}
+  <div class="sort-row">
+    <label class="sort-level" for="sort-primary">Primary</label>
+    <select class="sort-select" id="sort-primary" name="sort">
+      {{range .PrimarySort.Options}}
+      <option value="{{.Value}}" {{if .Selected}}selected{{end}} {{if .Disabled}}disabled{{end}}>{{.Label}}</option>
+      {{end}}
+    </select>
+    {{template "sort-direction" .PrimarySort}}
+  </div>
+  <div class="sort-row">
+    <label class="sort-level" for="sort-then">Then by</label>
+    <select class="sort-select" id="sort-then" name="then" {{if not .PrimarySort.Key}}disabled{{end}}>
+      {{range .SecondarySort.Options}}
+      <option value="{{.Value}}" {{if .Selected}}selected{{end}} {{if .Disabled}}disabled{{end}}>{{.Label}}</option>
+      {{end}}
+    </select>
+    {{template "sort-direction" .SecondarySort}}
+  </div>
+</form>
+<div class="heat-legend" aria-label="Heat map from weaker to stronger; gray means no stats">
+  <span>Weaker</span>
+  <span class="heat-swatch heat-1"></span>
+  <span class="heat-swatch heat-2"></span>
+  <span class="heat-swatch heat-3"></span>
+  <span class="heat-swatch heat-4"></span>
+  <span class="heat-swatch heat-5"></span>
+  <span>Stronger</span>
+  <span class="heat-missing-note">Gray = no stats</span>
+</div>
+{{if .Error}}
+<p class="players-message players-error" role="alert">{{.Error}}</p>
+{{else if .Players}}
+<div class="player-list">
+  {{range .Players}}
+  <article class="player-row">
+    <header class="player-identity">
+      <h3 class="player-name">{{.Name}}</h3>
+      <p class="player-meta">{{if .Team}}{{.Team}} · {{end}}{{.Position}}</p>
+    </header>
+    <dl class="player-stats" aria-label="Per-game stats">
+      {{range .Cells}}
+      <div class="player-stat {{.Heat}}"><dt><abbr title="{{.Title}}">{{.Label}}</abbr></dt><dd>{{.Value}}</dd></div>
+      {{end}}
+    </dl>
+  </article>
+  {{end}}
+</div>
+{{else}}
+<p class="players-message">No free agents found.</p>
+{{end}}
+{{end}}
+
+{{define "sort-direction"}}
+{{if .ToggleURL}}
+<a class="sort-dir" href="{{.ToggleURL}}" hx-get="{{.ToggleURL}}" hx-target="#player-panel"
+   hx-push-url="{{.ToggleURL}}" aria-label="{{.ToggleLabel}}">{{.Arrow}}</a>
+{{else}}
+<span class="sort-dir disabled" aria-hidden="true">{{.Arrow}}</span>
+{{end}}
+{{end}}

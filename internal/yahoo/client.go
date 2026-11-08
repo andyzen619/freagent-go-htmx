@@ -23,6 +23,10 @@ const DefaultBaseURL = "https://fantasysports.yahooapis.com/fantasy/v2"
 // caller can refresh the token and retry the request.
 var ErrUnauthorized = errors.New("yahoo: unauthorized")
 
+// ErrForbidden means Yahoo accepted the request but the application is not
+// authorized to perform it. Retrying and refreshing the token will not help.
+var ErrForbidden = errors.New("yahoo: forbidden")
+
 // TokenSource supplies the bearer token for a request. It may refresh an
 // expired token before returning one.
 type TokenSource func(ctx context.Context) (string, error)
@@ -49,6 +53,19 @@ func NewClient(token TokenSource) *Client {
 		HTTPClient: http.DefaultClient,
 		Token:      token,
 	}
+}
+
+// CurrentUser fetches the Yahoo account behind the access token. It is the
+// cheapest request that proves Yahoo still accepts the token.
+func (c *Client) CurrentUser(ctx context.Context) (*User, error) {
+	env, err := c.get(ctx, currentUserPath())
+	if err != nil {
+		return nil, err
+	}
+	if env.Users == nil || len(env.Users.Users) == 0 {
+		return nil, fmt.Errorf("yahoo: response has no current user")
+	}
+	return &env.Users.Users[0], nil
 }
 
 // League fetches a league resource. Pass sub-resources in out to include them
@@ -147,6 +164,9 @@ func (c *Client) get(ctx context.Context, path string) (*Envelope, error) {
 
 	if resp.StatusCode == http.StatusUnauthorized {
 		return nil, ErrUnauthorized
+	}
+	if resp.StatusCode == http.StatusForbidden {
+		return nil, fmt.Errorf("%w: %w", ErrForbidden, httpStatusError(resp))
 	}
 	if resp.StatusCode != http.StatusOK {
 		return nil, httpStatusError(resp)

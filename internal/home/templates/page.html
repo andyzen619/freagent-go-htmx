@@ -1,0 +1,37 @@
+{{define "content"}}
+<h2 class="page-title">Fantasy waiver Assistant</h2>
+{{if eq .Status "verified"}}
+<span class="status"><span class="status-dot"></span>Verified with Yahoo</span>
+{{else if eq .Status "access_denied"}}
+<section class="auth-error" role="alert" aria-labelledby="auth-title">
+  <div class="auth-error-heading">
+    <svg class="auth-error-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true">
+      <circle cx="12" cy="12" r="9"></circle>
+      <path d="M12 7v6M12 17h.01" stroke-linecap="round"></path>
+    </svg>
+    <div>
+      <h3 id="auth-title">Yahoo API access is not authorized</h3>
+      <p class="auth-error-lead">Your Yahoo login worked, but this app does not have permission to use the Fantasy Sports API.</p>
+    </div>
+  </div>
+  <ol class="auth-steps">
+    <li>Open your app in the Yahoo Developer dashboard.</li>
+    <li>Enable <strong>Fantasy Sports → Read</strong> under API permissions.</li>
+    <li>Return here and sign in again to request a new token.</li>
+  </ol>
+  <div class="auth-actions">
+    <a class="auth-button" href="https://developer.yahoo.com/apps/" target="_blank" rel="noopener noreferrer">Open Yahoo Developer apps ↗</a>
+    <a class="auth-button secondary" href="/login">Try signing in again</a>
+  </div>
+  <details class="auth-details">
+    <summary>Technical details</summary>
+    <pre>Yahoo returned HTTP 403:
+This application is not authorized to perform this action.</pre>
+  </details>
+</section>
+{{else if eq .Status "unavailable"}}
+<span class="status status-warn"><span class="status-dot"></span>Unable to verify right now</span>
+{{else}}
+<a href="/login">Login with Yahoo</a>
+{{end}}
+{{end}}
