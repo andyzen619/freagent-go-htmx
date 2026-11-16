@@ -7,26 +7,29 @@ import (
 	"net/http/httptest"
 	"strings"
 	"testing"
+
+	"fantasy_waiver_assistant/internal/domain/player"
+	"fantasy_waiver_assistant/internal/service/freeagents"
 )
 
 // stubSource is a Source with a fixed answer.
 type stubSource struct {
-	players []Player
+	players []player.Player
 	err     error
 }
 
-func (s stubSource) FreeAgents(context.Context) ([]Player, error) {
+func (s stubSource) FreeAgents(context.Context) ([]player.Player, error) {
 	return s.players, s.err
 }
 
-func get(t *testing.T, source Source, path string, htmx bool) string {
+func get(t *testing.T, source freeagents.Source, path string, htmx bool) string {
 	t.Helper()
 	return getWith(t, New(source), path, htmx)
 }
 
 func getMock(t *testing.T, path string, htmx bool) string {
 	t.Helper()
-	return getWith(t, NewMock(NewMockSource()), path, htmx)
+	return getWith(t, NewMock(freeagents.NewMockSource()), path, htmx)
 }
 
 func getWith(t *testing.T, handler *Handler, path string, htmx bool) string {
@@ -44,9 +47,9 @@ func getWith(t *testing.T, handler *Handler, path string, htmx bool) string {
 	return rec.Body.String()
 }
 
-var sample = []Player{{
+var sample = []player.Player{{
 	Name: "Jayson Tatum", Position: "SF", Team: "BOS",
-	Stats: Stats{
+	Stats: player.Stats{
 		Depth: "1", MPG: "36.1", FGPercent: "47.1", FTPercent: "84.0",
 		ThreePM: "3.1", Points: "26.8", Rebounds: "8.2", Assists: "4.5",
 		Steals: "1.0", Blocks: "0.6", Turnovers: "2.4",
@@ -75,22 +78,8 @@ func TestPageAsHtmxReturnsPanel(t *testing.T) {
 	}
 }
 
-func TestPanelFragment(t *testing.T) {
-	body := get(t, stubSource{players: sample}, "/hx/players/panel", true)
-	if strings.Contains(body, "<html") || !strings.Contains(body, "Jayson Tatum") {
-		t.Errorf("fragment should render the panel only, got %q", body)
-	}
-}
-
-func TestPanelDirectVisitStaysFragment(t *testing.T) {
-	body := get(t, stubSource{players: sample}, "/hx/players/panel", false)
-	if strings.Contains(body, "<html") {
-		t.Errorf("component route should never render the layout, got %q", body)
-	}
-}
-
 func TestPanelShowsIdentityAboveStats(t *testing.T) {
-	body := get(t, stubSource{players: sample}, "/hx/players/panel", true)
+	body := get(t, stubSource{players: sample}, "/players", true)
 
 	identity := strings.Index(body, "Jayson Tatum")
 	stats := strings.Index(body, `<dl class="player-stats"`)
@@ -103,7 +92,7 @@ func TestPanelShowsIdentityAboveStats(t *testing.T) {
 }
 
 func TestPanelShowsAllComparisonColumns(t *testing.T) {
-	body := get(t, stubSource{players: sample}, "/hx/players/panel", true)
+	body := get(t, stubSource{players: sample}, "/players", true)
 
 	for _, label := range []string{"DPT", "MPG", "FG%", "FT%", "3PM", "PTS", "REB", "AST", "STL", "BLK", "TO"} {
 		if !strings.Contains(body, ">"+label+"<") {
@@ -119,7 +108,7 @@ func TestPanelShowsAllComparisonColumns(t *testing.T) {
 }
 
 func TestPanelShowsMissingStatsAsDash(t *testing.T) {
-	body := get(t, stubSource{players: []Player{{Name: "No Stats"}}}, "/hx/players/panel", true)
+	body := get(t, stubSource{players: []player.Player{{Name: "No Stats"}}}, "/players", true)
 
 	if strings.Count(body, "—") != 11 {
 		t.Errorf("missing values should render 11 dashes, got %q", body)
@@ -130,7 +119,7 @@ func TestPanelShowsMissingStatsAsDash(t *testing.T) {
 }
 
 func TestPanelShowsHeatLegend(t *testing.T) {
-	body := get(t, stubSource{players: sample}, "/hx/players/panel", true)
+	body := get(t, stubSource{players: sample}, "/players", true)
 
 	for _, want := range []string{"heat-legend", "heat-1", "heat-5", "Gray = no stats"} {
 		if !strings.Contains(body, want) {
@@ -140,7 +129,7 @@ func TestPanelShowsHeatLegend(t *testing.T) {
 }
 
 func TestPanelHasNoPositionFilterOrHorizontalScroll(t *testing.T) {
-	body := get(t, stubSource{players: sample}, "/hx/players/panel", true)
+	body := get(t, stubSource{players: sample}, "/players", true)
 
 	for _, unwanted := range []string{"?pos=", `class="chips"`, "overflow-x"} {
 		if strings.Contains(body, unwanted) {
@@ -150,7 +139,7 @@ func TestPanelHasNoPositionFilterOrHorizontalScroll(t *testing.T) {
 }
 
 func TestSortControls(t *testing.T) {
-	body := get(t, stubSource{players: sample}, "/hx/players/panel?sort=MPG&dir=desc&then=REB&then_dir=asc", true)
+	body := get(t, stubSource{players: sample}, "/players?sort=MPG&dir=desc&then=REB&then_dir=asc", true)
 	unescaped := html.UnescapeString(body)
 
 	for _, want := range []string{
@@ -181,7 +170,7 @@ func TestSortControls(t *testing.T) {
 }
 
 func TestSortControlsNoPrimary(t *testing.T) {
-	body := get(t, stubSource{players: sample}, "/hx/players/panel", true)
+	body := get(t, stubSource{players: sample}, "/players", true)
 
 	if !strings.Contains(body, `<select class="sort-select" id="sort-then" name="then" disabled>`) {
 		t.Errorf("secondary selector should be disabled without a primary sort: %q", body)
@@ -198,7 +187,7 @@ func TestSortControlsNoPrimary(t *testing.T) {
 }
 
 func TestSecondarySelectEnabledWithPrimaryOnly(t *testing.T) {
-	body := get(t, stubSource{players: sample}, "/hx/players/panel?sort=PTS&dir=desc", true)
+	body := get(t, stubSource{players: sample}, "/players?sort=PTS&dir=desc", true)
 
 	if strings.Contains(body, `id="sort-then" name="then" disabled`) {
 		t.Errorf("secondary selector should be enabled once a primary is chosen: %q", body)
@@ -209,33 +198,33 @@ func TestSecondarySelectEnabledWithPrimaryOnly(t *testing.T) {
 }
 
 func TestSortAscendingAndDescending(t *testing.T) {
-	players := []Player{
-		{Name: "Ten", Stats: Stats{MPG: "10.0"}},
-		{Name: "Two", Stats: Stats{MPG: "2.0"}},
-		{Name: "Nine", Stats: Stats{MPG: "9.0"}},
-		{Name: "Missing", Stats: Stats{MPG: missingStat}},
+	players := []player.Player{
+		{Name: "Ten", Stats: player.Stats{MPG: "10.0"}},
+		{Name: "Two", Stats: player.Stats{MPG: "2.0"}},
+		{Name: "Nine", Stats: player.Stats{MPG: "9.0"}},
+		{Name: "Missing", Stats: player.Stats{MPG: player.MissingStat}},
 	}
 	source := stubSource{players: players}
 
-	ascending := get(t, source, "/hx/players/panel?sort=MPG&dir=asc", true)
+	ascending := get(t, source, "/players?sort=MPG&dir=asc", true)
 	if !inOrder(ascending, "Two", "Nine", "Ten", "Missing") {
 		t.Errorf("ascending order wrong: %q", ascending)
 	}
 
-	descending := get(t, source, "/hx/players/panel?sort=MPG&dir=desc", true)
+	descending := get(t, source, "/players?sort=MPG&dir=desc", true)
 	if !inOrder(descending, "Ten", "Nine", "Two", "Missing") {
 		t.Errorf("descending order wrong: %q", descending)
 	}
 }
 
 func TestSecondarySortBreaksTies(t *testing.T) {
-	players := []Player{
-		{Name: "LowRebound", Stats: Stats{Points: "20", Rebounds: "4"}},
-		{Name: "HighRebound", Stats: Stats{Points: "20", Rebounds: "9"}},
-		{Name: "TopScore", Stats: Stats{Points: "30", Rebounds: "2"}},
-		{Name: "MidRebound", Stats: Stats{Points: "20", Rebounds: "6"}},
+	players := []player.Player{
+		{Name: "LowRebound", Stats: player.Stats{Points: "20", Rebounds: "4"}},
+		{Name: "HighRebound", Stats: player.Stats{Points: "20", Rebounds: "9"}},
+		{Name: "TopScore", Stats: player.Stats{Points: "30", Rebounds: "2"}},
+		{Name: "MidRebound", Stats: player.Stats{Points: "20", Rebounds: "6"}},
 	}
-	body := get(t, stubSource{players: players}, "/hx/players/panel?sort=PTS&dir=desc&then=REB&then_dir=desc", true)
+	body := get(t, stubSource{players: players}, "/players?sort=PTS&dir=desc&then=REB&then_dir=desc", true)
 
 	if !inOrder(body, "TopScore", "HighRebound", "MidRebound", "LowRebound") {
 		t.Errorf("secondary tie-break order wrong: %q", body)
@@ -243,7 +232,7 @@ func TestSecondarySortBreaksTies(t *testing.T) {
 }
 
 func TestSecondarySortColumnMovesSecond(t *testing.T) {
-	body := get(t, stubSource{players: sample}, "/hx/players/panel?sort=PTS&dir=desc&then=REB&then_dir=asc", true)
+	body := get(t, stubSource{players: sample}, "/players?sort=PTS&dir=desc&then=REB&then_dir=asc", true)
 
 	start := strings.Index(body, `<dl class="player-stats"`)
 	if start < 0 {
@@ -259,7 +248,7 @@ func TestSecondarySortColumnMovesSecond(t *testing.T) {
 }
 
 func TestActiveSortColumnMovesFirst(t *testing.T) {
-	body := get(t, stubSource{players: sample}, "/hx/players/panel?sort=PTS&dir=desc", true)
+	body := get(t, stubSource{players: sample}, "/players?sort=PTS&dir=desc", true)
 
 	start := strings.Index(body, `<dl class="player-stats"`)
 	if start < 0 {
@@ -280,7 +269,7 @@ func TestActiveSortColumnMovesFirst(t *testing.T) {
 }
 
 func TestNoSortKeepsStandardColumnOrder(t *testing.T) {
-	body := get(t, stubSource{players: sample}, "/hx/players/panel", true)
+	body := get(t, stubSource{players: sample}, "/players", true)
 
 	start := strings.Index(body, `<dl class="player-stats"`)
 	stats := body[start:]
@@ -292,11 +281,11 @@ func TestNoSortKeepsStandardColumnOrder(t *testing.T) {
 }
 
 func TestInvalidSortKeepsSourceOrder(t *testing.T) {
-	players := []Player{
-		{Name: "Second Input", Stats: Stats{MPG: "2.0"}},
-		{Name: "First Input", Stats: Stats{MPG: "10.0"}},
+	players := []player.Player{
+		{Name: "Second Input", Stats: player.Stats{MPG: "2.0"}},
+		{Name: "First Input", Stats: player.Stats{MPG: "10.0"}},
 	}
-	body := get(t, stubSource{players: players}, "/hx/players/panel?sort=BOGUS&dir=asc", true)
+	body := get(t, stubSource{players: players}, "/players?sort=BOGUS&dir=asc", true)
 
 	if !inOrder(body, "Second Input", "First Input") {
 		t.Errorf("invalid sort should keep the source order, got %q", body)
@@ -319,7 +308,7 @@ func inOrder(body string, names ...string) bool {
 }
 
 func TestMissingLeagueKey(t *testing.T) {
-	body := get(t, stubSource{err: ErrNoLeague}, "/players", false)
+	body := get(t, stubSource{err: freeagents.ErrNoLeague}, "/players", false)
 	if !strings.Contains(body, "YAHOO_LEAGUE_KEY") {
 		t.Errorf("error should mention the missing league key, got %q", body)
 	}
@@ -342,7 +331,7 @@ func TestMockPageShowsLabelAndPlayers(t *testing.T) {
 }
 
 func TestMockFragmentShowsAllPlayers(t *testing.T) {
-	body := getMock(t, "/hx/players/panel", true)
+	body := getMock(t, "/players", true)
 	if !strings.Contains(body, "Noah Bennett") || !strings.Contains(body, "Malik Carter") {
 		t.Errorf("mock fragment should include players from all positions, got %q", body)
 	}

@@ -31,12 +31,6 @@ func Render(w http.ResponseWriter, r *http.Request, t *template.Template, fragme
 	write(w, t, name, data)
 }
 
-// Fragment always writes the named fragment, for routes that exist only to be
-// swapped in by htmx.
-func Fragment(w http.ResponseWriter, t *template.Template, fragment string, data any) {
-	write(w, t, fragment, data)
-}
-
 func write(w http.ResponseWriter, t *template.Template, name string, data any) {
 	w.Header().Add("Vary", "HX-Request")
 	w.Header().Set("Content-Type", "text/html; charset=utf-8")

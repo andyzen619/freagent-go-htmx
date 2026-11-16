@@ -1,4 +1,4 @@
-package middleware
+package web
 
 import (
 	"context"
@@ -6,7 +6,7 @@ import (
 	"net/http/httptest"
 	"testing"
 
-	"fantasy_waiver_assistant/internal/session"
+	"fantasy_waiver_assistant/internal/service/session"
 )
 
 // stubSession is a SessionValidator with a fixed answer.
@@ -68,7 +68,7 @@ func TestRequireSession(t *testing.T) {
 
 	t.Run("access denied htmx request gets HX-Redirect home", func(t *testing.T) {
 		validator := &stubSession{status: session.AccessDenied}
-		req := httptest.NewRequest(http.MethodGet, "/hx/players/panel", nil)
+		req := httptest.NewRequest(http.MethodGet, "/players", nil)
 		req.Header.Set("HX-Request", "true")
 		rec := httptest.NewRecorder()
 		RequireSession(validator, ok).ServeHTTP(rec, req)

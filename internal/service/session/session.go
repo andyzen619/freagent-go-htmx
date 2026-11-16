@@ -6,8 +6,8 @@ import (
 	"context"
 	"errors"
 
-	"fantasy_waiver_assistant/internal/auth"
-	"fantasy_waiver_assistant/internal/yahoo"
+	"fantasy_waiver_assistant/internal/infra/auth"
+	"fantasy_waiver_assistant/internal/infra/yahoo"
 )
 
 // Status is the result of checking the current Yahoo session.

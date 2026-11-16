@@ -1,11 +1,10 @@
-// Package middleware provides HTTP wrappers shared by the app's routes.
-package middleware
+package web
 
 import (
 	"context"
 	"net/http"
 
-	"fantasy_waiver_assistant/internal/session"
+	"fantasy_waiver_assistant/internal/service/session"
 )
 
 // SessionValidator reports whether the Yahoo session is actually usable.

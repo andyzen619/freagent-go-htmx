@@ -1,6 +1,10 @@
 package players
 
-import "testing"
+import (
+	"testing"
+
+	"fantasy_waiver_assistant/internal/domain/player"
+)
 
 func columnFor(key string) StatColumn {
 	for _, column := range displayColumns(sortState{}) {
@@ -12,12 +16,12 @@ func columnFor(key string) StatColumn {
 }
 
 func TestHeatClassesHigherIsStronger(t *testing.T) {
-	players := []Player{
-		{Stats: Stats{Points: "10"}},
-		{Stats: Stats{Points: "20"}},
-		{Stats: Stats{Points: "30"}},
-		{Stats: Stats{Points: "40"}},
-		{Stats: Stats{Points: "50"}},
+	players := []player.Player{
+		{Stats: player.Stats{Points: "10"}},
+		{Stats: player.Stats{Points: "20"}},
+		{Stats: player.Stats{Points: "30"}},
+		{Stats: player.Stats{Points: "40"}},
+		{Stats: player.Stats{Points: "50"}},
 	}
 
 	got := heatClasses(players, columnFor("PTS"))
@@ -30,12 +34,12 @@ func TestHeatClassesHigherIsStronger(t *testing.T) {
 }
 
 func TestHeatClassesInvertsDepthAndTurnovers(t *testing.T) {
-	players := []Player{
-		{Stats: Stats{Depth: "1", Turnovers: "1"}},
-		{Stats: Stats{Depth: "2", Turnovers: "2"}},
-		{Stats: Stats{Depth: "3", Turnovers: "3"}},
-		{Stats: Stats{Depth: "4", Turnovers: "4"}},
-		{Stats: Stats{Depth: "5", Turnovers: "5"}},
+	players := []player.Player{
+		{Stats: player.Stats{Depth: "1", Turnovers: "1"}},
+		{Stats: player.Stats{Depth: "2", Turnovers: "2"}},
+		{Stats: player.Stats{Depth: "3", Turnovers: "3"}},
+		{Stats: player.Stats{Depth: "4", Turnovers: "4"}},
+		{Stats: player.Stats{Depth: "5", Turnovers: "5"}},
 	}
 
 	depth := heatClasses(players, columnFor("DPT"))
@@ -52,29 +56,29 @@ func TestHeatClassesInvertsDepthAndTurnovers(t *testing.T) {
 }
 
 func TestHeatClassesMissingAndEqualValues(t *testing.T) {
-	missing := []Player{
-		{Stats: Stats{Points: "10"}},
-		{Stats: Stats{Points: missingStat}},
-		{Stats: Stats{Points: "30"}},
+	missing := []player.Player{
+		{Stats: player.Stats{Points: "10"}},
+		{Stats: player.Stats{Points: player.MissingStat}},
+		{Stats: player.Stats{Points: "30"}},
 	}
 	got := heatClasses(missing, columnFor("PTS"))
 	if got[0] != "heat-1" || got[1] != "heat-missing" || got[2] != "heat-5" {
 		t.Errorf("missing classes = %v", got)
 	}
 
-	equal := []Player{
-		{Stats: Stats{Points: "20"}},
-		{Stats: Stats{Points: "20"}},
-		{Stats: Stats{Points: missingStat}},
+	equal := []player.Player{
+		{Stats: player.Stats{Points: "20"}},
+		{Stats: player.Stats{Points: "20"}},
+		{Stats: player.Stats{Points: player.MissingStat}},
 	}
 	got = heatClasses(equal, columnFor("PTS"))
 	if got[0] != "heat-3" || got[1] != "heat-3" || got[2] != "heat-missing" {
 		t.Errorf("equal classes = %v", got)
 	}
 
-	single := []Player{
-		{Stats: Stats{Points: "20"}},
-		{Stats: Stats{Points: missingStat}},
+	single := []player.Player{
+		{Stats: player.Stats{Points: "20"}},
+		{Stats: player.Stats{Points: player.MissingStat}},
 	}
 	got = heatClasses(single, columnFor("PTS"))
 	if got[0] != "heat-3" || got[1] != "heat-missing" {
@@ -83,9 +87,9 @@ func TestHeatClassesMissingAndEqualValues(t *testing.T) {
 }
 
 func TestPlayerViewsFollowActiveColumnOrder(t *testing.T) {
-	players := []Player{
-		{Name: "First", Stats: Stats{Depth: "1", Points: "10"}},
-		{Name: "Second", Stats: Stats{Depth: "2", Points: "20"}},
+	players := []player.Player{
+		{Name: "First", Stats: player.Stats{Depth: "1", Points: "10"}},
+		{Name: "Second", Stats: player.Stats{Depth: "2", Points: "20"}},
 	}
 	active := sortState{primary: &sortColumns[5]} // PTS
 	views := playerViews(players, displayColumns(active))

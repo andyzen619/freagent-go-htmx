@@ -3,45 +3,39 @@
 package players
 
 import (
-	"context"
 	"errors"
 	"log"
 	"net/http"
 
+	"fantasy_waiver_assistant/internal/service/freeagents"
 	"fantasy_waiver_assistant/internal/web"
 )
 
 // page is parsed once at startup, merged over the shared layout.
 var page = web.Parse(templates, "templates/*.html")
 
-// Source loads the free agents shown on the players page.
-type Source interface {
-	FreeAgents(ctx context.Context) ([]Player, error)
-}
-
 // Handler serves the players page and its rows fragment.
 type Handler struct {
-	source Source
+	source freeagents.Source
 	mock   bool
 }
 
 // New returns a Handler that reads players from source.
-func New(source Source) *Handler {
+func New(source freeagents.Source) *Handler {
 	return &Handler{source: source}
 }
 
 // NewMock returns a Handler that labels the page as mock data.
-func NewMock(source Source) *Handler {
+func NewMock(source freeagents.Source) *Handler {
 	return &Handler{source: source, mock: true}
 }
 
-// Register adds the page and the fragment route to mux.
+// Register adds the page route to mux.
 func (h *Handler) Register(mux *http.ServeMux) {
 	mux.HandleFunc("GET /players", h.index)
-	mux.HandleFunc("GET /hx/players/panel", h.panel)
 }
 
-// pageData is the template input for both the page and the rows fragment.
+// pageData is the template input for the page and its rows fragment.
 type pageData struct {
 	Nav           string // active tab in the shared layout; ignored by the fragment
 	Players       []PlayerView
@@ -66,7 +60,7 @@ func (h *Handler) load(r *http.Request) pageData {
 	if err != nil {
 		log.Printf("players: load: %v", err)
 		msg := "Could not load free agents."
-		if errors.Is(err, ErrNoLeague) {
+		if errors.Is(err, freeagents.ErrNoLeague) {
 			msg = err.Error()
 		}
 		data.Error = msg
@@ -81,9 +75,4 @@ func (h *Handler) load(r *http.Request) pageData {
 // index serves /players. Direct visits get the layout; htmx gets the panel.
 func (h *Handler) index(w http.ResponseWriter, r *http.Request) {
 	web.Render(w, r, page, "panel", h.load(r))
-}
-
-// panel serves /hx/players/panel, which only ever returns the fragment.
-func (h *Handler) panel(w http.ResponseWriter, r *http.Request) {
-	web.Fragment(w, page, "panel", h.load(r))
 }

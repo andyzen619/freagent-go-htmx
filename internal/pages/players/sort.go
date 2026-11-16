@@ -5,6 +5,8 @@ import (
 	"sort"
 	"strconv"
 	"strings"
+
+	"fantasy_waiver_assistant/internal/domain/player"
 )
 
 type sortColumn struct {
@@ -110,7 +112,7 @@ func displayColumns(state sortState) []StatColumn {
 // sortPlayers orders by the primary category, then the optional secondary
 // category. Missing values sort last at every level, and remaining ties keep
 // their source order.
-func sortPlayers(players []Player, state sortState) {
+func sortPlayers(players []player.Player, state sortState) {
 	if state.primary == nil {
 		return
 	}

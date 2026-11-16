@@ -10,7 +10,7 @@ import (
 	"strings"
 	"testing"
 
-	config "fantasy_waiver_assistant/internal/shared"
+	config "fantasy_waiver_assistant/internal/infra/config"
 )
 
 func TestClientTokenIsNilBeforeLogin(t *testing.T) {

@@ -1,8 +1,10 @@
-package players
+package freeagents
 
 import (
 	"context"
 	"testing"
+
+	"fantasy_waiver_assistant/internal/domain/player"
 )
 
 func TestMockSourceReturnsAllPlayers(t *testing.T) {
@@ -18,21 +20,21 @@ func TestMockSourceReturnsAllPlayers(t *testing.T) {
 func TestMockSourceIncludesComparisonStats(t *testing.T) {
 	found, _ := NewMockSource().FreeAgents(context.Background())
 
-	for _, player := range found {
-		stats := player.Stats
-		if player.Name == "" || player.Position == "" || player.Team == "" {
-			t.Errorf("identity incomplete: %+v", player)
+	for _, p := range found {
+		stats := p.Stats
+		if p.Name == "" || p.Position == "" || p.Team == "" {
+			t.Errorf("identity incomplete: %+v", p)
 		}
-		if stats.Depth == "" || stats.Depth == missingStat {
-			t.Errorf("%s has no mock depth ranking", player.Name)
+		if stats.Depth == "" || stats.Depth == player.MissingStat {
+			t.Errorf("%s has no mock depth ranking", p.Name)
 		}
 		for label, value := range map[string]string{
 			"MPG": stats.MPG, "FG%": stats.FGPercent, "FT%": stats.FTPercent,
 			"3PM": stats.ThreePM, "PTS": stats.Points, "REB": stats.Rebounds,
 			"AST": stats.Assists, "STL": stats.Steals, "BLK": stats.Blocks, "TO": stats.Turnovers,
 		} {
-			if value == "" || value == missingStat {
-				t.Errorf("%s has no %s value", player.Name, label)
+			if value == "" || value == player.MissingStat {
+				t.Errorf("%s has no %s value", p.Name, label)
 			}
 		}
 	}

@@ -3,6 +3,8 @@ package players
 import (
 	"fmt"
 	"math"
+
+	"fantasy_waiver_assistant/internal/domain/player"
 )
 
 // StatCell is one value in a player's comparison row.
@@ -15,56 +17,51 @@ type StatCell struct {
 
 // PlayerView is a player plus the ordered, heat-mapped cells to render.
 type PlayerView struct {
-	Player
+	player.Player
 	Cells []StatCell
 }
 
 // playerViews applies the per-column heat map after sorting and determines the
 // visible column order.
-func playerViews(players []Player, columns []StatColumn) []PlayerView {
-	heat := make([][]string, len(players))
-	for i := range heat {
-		heat[i] = make([]string, len(columns))
-	}
-	for columnIndex, column := range columns {
-		for playerIndex, class := range heatClasses(players, column) {
-			heat[playerIndex][columnIndex] = class
-		}
+func playerViews(players []player.Player, columns []StatColumn) []PlayerView {
+	classes := make([][]string, len(columns)) // classes[column][player]
+	for c, column := range columns {
+		classes[c] = heatClasses(players, column)
 	}
 
 	views := make([]PlayerView, len(players))
-	for playerIndex, player := range players {
+	for i, p := range players {
 		cells := make([]StatCell, len(columns))
-		for columnIndex, column := range columns {
-			value := player.Stats.Value(column.Key)
-			class := heat[playerIndex][columnIndex]
-			if value == "" {
-				value = missingStat
-				class = "heat-missing"
-			}
-			cells[columnIndex] = StatCell{
-				Label: column.Label,
-				Title: column.Title,
-				Value: value,
-				Heat:  class,
-			}
+		for c, column := range columns {
+			cells[c] = statCell(p, column, classes[c][i])
 		}
-		views[playerIndex] = PlayerView{Player: player, Cells: cells}
+		views[i] = PlayerView{Player: p, Cells: cells}
 	}
 	return views
 }
 
+// statCell renders one player's value for a column, falling back to the missing
+// marker and a neutral heat class when the value is absent.
+func statCell(p player.Player, column StatColumn, class string) StatCell {
+	value := p.Stats.Value(column.Key)
+	if value == "" {
+		value = player.MissingStat
+		class = "heat-missing"
+	}
+	return StatCell{Label: column.Label, Title: column.Title, Value: value, Heat: class}
+}
+
 // heatClasses ranks each valid value within one column. Higher is stronger
 // except for explicitly inverted categories such as depth and turnovers.
-func heatClasses(players []Player, column StatColumn) []string {
+func heatClasses(players []player.Player, column StatColumn) []string {
 	classes := make([]string, len(players))
 	values := make([]float64, len(players))
 	valid := make([]bool, len(players))
 	validCount := 0
 	var min, max float64
 
-	for i, player := range players {
-		value, ok := statValue(player.Stats.Value(column.Key))
+	for i, p := range players {
+		value, ok := statValue(p.Stats.Value(column.Key))
 		if !ok {
 			classes[i] = "heat-missing"
 			continue

@@ -1,9 +1,10 @@
-package players
+package freeagents
 
 import (
 	"testing"
 
-	"fantasy_waiver_assistant/internal/yahoo"
+	"fantasy_waiver_assistant/internal/domain/player"
+	"fantasy_waiver_assistant/internal/infra/yahoo"
 )
 
 func yahooPlayer(stats map[int]string) yahoo.Player {
@@ -39,8 +40,8 @@ func TestPlayerFromYahooConvertsSeasonTotalsToPerGame(t *testing.T) {
 	if got.Name != "Test Player" || got.Team != "BOS" || got.Position != "SG" {
 		t.Errorf("identity = %+v", got)
 	}
-	want := Stats{
-		Depth: missingStat, MPG: "30.0", FGPercent: "50.0", FTPercent: "80.0",
+	want := player.Stats{
+		Depth: player.MissingStat, MPG: "30.0", FGPercent: "50.0", FTPercent: "80.0",
 		ThreePM: "2.0", Points: "25.0", Rebounds: "8.0", Assists: "7.0",
 		Steals: "1.0", Blocks: "0.5", Turnovers: "3.0",
 	}
@@ -52,11 +53,11 @@ func TestPlayerFromYahooConvertsSeasonTotalsToPerGame(t *testing.T) {
 func TestPlayerFromYahooMissingStats(t *testing.T) {
 	got := playerFromYahoo(yahoo.Player{Name: yahoo.Name{Full: "No Stats"}})
 
-	want := Stats{
-		Depth: missingStat, MPG: missingStat, FGPercent: missingStat,
-		FTPercent: missingStat, ThreePM: missingStat, Points: missingStat,
-		Rebounds: missingStat, Assists: missingStat, Steals: missingStat,
-		Blocks: missingStat, Turnovers: missingStat,
+	want := player.Stats{
+		Depth: player.MissingStat, MPG: player.MissingStat, FGPercent: player.MissingStat,
+		FTPercent: player.MissingStat, ThreePM: player.MissingStat, Points: player.MissingStat,
+		Rebounds: player.MissingStat, Assists: player.MissingStat, Steals: player.MissingStat,
+		Blocks: player.MissingStat, Turnovers: player.MissingStat,
 	}
 	if got.Stats != want {
 		t.Errorf("stats = %+v\nwant   %+v", got.Stats, want)
@@ -71,7 +72,7 @@ func TestPlayerFromYahooNeedsGamesPlayedForCountingStats(t *testing.T) {
 
 	got := playerFromYahoo(p)
 
-	if got.Stats.Points != missingStat || got.Stats.MPG != missingStat {
+	if got.Stats.Points != player.MissingStat || got.Stats.MPG != player.MissingStat {
 		t.Errorf("counting stats should be missing without games played: %+v", got.Stats)
 	}
 	if got.Stats.FGPercent != "45.0" {
@@ -88,7 +89,7 @@ func TestPlayerFromYahooHandlesMissingStatValues(t *testing.T) {
 
 	got := playerFromYahoo(p)
 
-	if got.Stats.Points != missingStat || got.Stats.FGPercent != missingStat {
+	if got.Stats.Points != player.MissingStat || got.Stats.FGPercent != player.MissingStat {
 		t.Errorf("invalid values should be missing: %+v", got.Stats)
 	}
 }

@@ -1,4 +1,6 @@
-package players
+// Package freeagents loads and shapes the free agents shown on the players
+// page. It turns raw Yahoo season totals into per-game domain stats.
+package freeagents
 
 import (
 	"context"
@@ -7,65 +9,16 @@ import (
 	"strconv"
 	"strings"
 
-	"fantasy_waiver_assistant/internal/yahoo"
+	"fantasy_waiver_assistant/internal/domain/player"
+	"fantasy_waiver_assistant/internal/infra/yahoo"
 )
 
 // ErrNoLeague means YAHOO_LEAGUE_KEY is missing from .env.
 var ErrNoLeague = errors.New("YAHOO_LEAGUE_KEY is not set in .env")
 
-const missingStat = "—"
-
-// Stats is the compact, per-game comparison line shown for each player.
-type Stats struct {
-	Depth     string
-	MPG       string
-	FGPercent string
-	FTPercent string
-	ThreePM   string
-	Points    string
-	Rebounds  string
-	Assists   string
-	Steals    string
-	Blocks    string
-	Turnovers string
-}
-
-// Value returns the displayed value for a canonical stat key.
-func (s Stats) Value(key string) string {
-	switch key {
-	case "DPT":
-		return s.Depth
-	case "MPG":
-		return s.MPG
-	case "FG%":
-		return s.FGPercent
-	case "FT%":
-		return s.FTPercent
-	case "3PM":
-		return s.ThreePM
-	case "PTS":
-		return s.Points
-	case "REB":
-		return s.Rebounds
-	case "AST":
-		return s.Assists
-	case "STL":
-		return s.Steals
-	case "BLK":
-		return s.Blocks
-	case "TO":
-		return s.Turnovers
-	default:
-		return ""
-	}
-}
-
-// Player is one row on the players page.
-type Player struct {
-	Name     string
-	Position string
-	Team     string
-	Stats    Stats
+// Source loads the free agents shown on the players page.
+type Source interface {
+	FreeAgents(ctx context.Context) ([]player.Player, error)
 }
 
 // YahooSource reads free agents from the Yahoo Fantasy API.
@@ -80,7 +33,7 @@ func NewYahooSource(client *yahoo.Client, leagueKey string) *YahooSource {
 }
 
 // FreeAgents returns up to 25 free agents with season stats.
-func (s *YahooSource) FreeAgents(ctx context.Context) ([]Player, error) {
+func (s *YahooSource) FreeAgents(ctx context.Context) ([]player.Player, error) {
 	if s.leagueKey == "" {
 		return nil, ErrNoLeague
 	}
@@ -92,7 +45,7 @@ func (s *YahooSource) FreeAgents(ctx context.Context) ([]Player, error) {
 	if err != nil {
 		return nil, err
 	}
-	out := make([]Player, len(found.Players))
+	out := make([]player.Player, len(found.Players))
 	for i, p := range found.Players {
 		out[i] = playerFromYahoo(p)
 	}
@@ -115,7 +68,7 @@ const (
 	statTurnovers   = 19
 )
 
-func playerFromYahoo(p yahoo.Player) Player {
+func playerFromYahoo(p yahoo.Player) player.Player {
 	stats := make(map[int]string)
 	if p.PlayerStats != nil {
 		for _, stat := range p.PlayerStats.Stats {
@@ -126,17 +79,17 @@ func playerFromYahoo(p yahoo.Player) Player {
 	games, hasGames := statNumber(stats, statGamesPlayed)
 	perGame := func(id int) string {
 		if !hasGames || games <= 0 {
-			return missingStat
+			return player.MissingStat
 		}
 		return divideStat(stats, id, games)
 	}
 
-	return Player{
+	return player.Player{
 		Name:     p.Name.Full,
 		Position: p.DisplayPosition,
 		Team:     p.EditorialTeamAbbr,
-		Stats: Stats{
-			Depth:     missingStat,
+		Stats: player.Stats{
+			Depth:     player.MissingStat,
 			MPG:       perGame(statMinutes),
 			FGPercent: percentStat(stats, statFGPercent),
 			FTPercent: percentStat(stats, statFTPercent),
@@ -167,7 +120,7 @@ func statNumber(stats map[int]string, id int) (float64, bool) {
 func divideStat(stats map[int]string, id int, games float64) string {
 	value, ok := statNumber(stats, id)
 	if !ok {
-		return missingStat
+		return player.MissingStat
 	}
 	return fmt.Sprintf("%.1f", value/games)
 }
@@ -175,7 +128,7 @@ func divideStat(stats map[int]string, id int, games float64) string {
 func percentStat(stats map[int]string, id int) string {
 	value, ok := statNumber(stats, id)
 	if !ok {
-		return missingStat
+		return player.MissingStat
 	}
 	if value <= 1 {
 		value *= 100

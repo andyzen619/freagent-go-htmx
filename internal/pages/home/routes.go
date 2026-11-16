@@ -6,7 +6,7 @@ import (
 	"embed"
 	"net/http"
 
-	"fantasy_waiver_assistant/internal/session"
+	"fantasy_waiver_assistant/internal/service/session"
 	"fantasy_waiver_assistant/internal/web"
 )
 

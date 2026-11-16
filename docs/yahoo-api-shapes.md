@@ -364,19 +364,19 @@ flat objects for players.**
 
 **Decision:** this project decodes **XML**. It is Yahoo's canonical format (the default
 response and every official sample) and maps cleanly onto Go `encoding/xml` structs with
-no normalization. The types and client live in `internal/yahoo/`; the JSON quirks above are
+no normalization. The types and client live in `internal/infra/yahoo/`; the JSON quirks above are
 kept for reference only.
 
 Once OAuth lands, capture real responses from
 `league/{key}`, `league/{key}/settings`, `league/{key}/players;status=FA;out=ownership,percent_owned`
-into `internal/yahoo/testdata/` and pin them with golden tests — the frontend host probed
+into `internal/infra/yahoo/testdata/` and pin them with golden tests — the frontend host probed
 above is not guaranteed identical to the OAuth API host.
 
 ---
 
 ## Go implementation
 
-Implemented in `internal/yahoo/` (XML decoding, no third-party dependencies):
+Implemented in `internal/infra/yahoo/` (XML decoding, no third-party dependencies):
 
 | File | Contents |
 |---|---|
@@ -400,7 +400,7 @@ players, err := c.LeaguePlayers(ctx, league.LeagueKey, yahoo.PlayerFilter{
 })
 ```
 
-Golden fixtures in `internal/yahoo/testdata/` come from the official sample responses
+Golden fixtures in `internal/infra/yahoo/testdata/` come from the official sample responses
 (`league.xml`, `league_settings.xml`, `player_league.xml`, `player_stats.xml`) plus
 synthetic players/ownership documents. On a 401 the client returns `yahoo.ErrUnauthorized`
 so the caller can refresh the token and retry. The JSON decoder is deliberately not

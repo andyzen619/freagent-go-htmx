@@ -3,6 +3,8 @@ package players
 import (
 	"net/url"
 	"testing"
+
+	"fantasy_waiver_assistant/internal/domain/player"
 )
 
 func mustValues(t *testing.T, query string) url.Values {
@@ -14,30 +16,30 @@ func mustValues(t *testing.T, query string) url.Values {
 	return values
 }
 
-func sortTestPlayers() []Player {
-	return []Player{
-		{Name: "Ten", Stats: Stats{MPG: "10.0", Points: "30.0", Rebounds: "5.0"}},
-		{Name: "Two", Stats: Stats{MPG: "2.0", Points: "40.0", Rebounds: "4.0"}},
-		{Name: "Nine", Stats: Stats{MPG: "9.0", Points: "20.0", Rebounds: "8.0"}},
-		{Name: "Missing", Stats: Stats{MPG: missingStat, Points: missingStat, Rebounds: missingStat}},
+func sortTestPlayers() []player.Player {
+	return []player.Player{
+		{Name: "Ten", Stats: player.Stats{MPG: "10.0", Points: "30.0", Rebounds: "5.0"}},
+		{Name: "Two", Stats: player.Stats{MPG: "2.0", Points: "40.0", Rebounds: "4.0"}},
+		{Name: "Nine", Stats: player.Stats{MPG: "9.0", Points: "20.0", Rebounds: "8.0"}},
+		{Name: "Missing", Stats: player.Stats{MPG: player.MissingStat, Points: player.MissingStat, Rebounds: player.MissingStat}},
 	}
 }
 
-func names(players []Player) []string {
+func names(players []player.Player) []string {
 	out := make([]string, len(players))
-	for i, player := range players {
-		out[i] = player.Name
+	for i, p := range players {
+		out[i] = p.Name
 	}
 	return out
 }
 
-func equalNames(got []Player, want ...string) bool {
-	names := names(got)
-	if len(names) != len(want) {
+func equalNames(got []player.Player, want ...string) bool {
+	gotNames := names(got)
+	if len(gotNames) != len(want) {
 		return false
 	}
-	for i := range names {
-		if names[i] != want[i] {
+	for i := range gotNames {
+		if gotNames[i] != want[i] {
 			return false
 		}
 	}
@@ -63,11 +65,11 @@ func TestSortPlayersNumeric(t *testing.T) {
 }
 
 func TestSortPlayersSecondaryBreaksTies(t *testing.T) {
-	players := []Player{
-		{Name: "LowRebound", Stats: Stats{Points: "20", Rebounds: "4"}},
-		{Name: "HighRebound", Stats: Stats{Points: "20", Rebounds: "9"}},
-		{Name: "TopScore", Stats: Stats{Points: "30", Rebounds: "2"}},
-		{Name: "MidRebound", Stats: Stats{Points: "20", Rebounds: "6"}},
+	players := []player.Player{
+		{Name: "LowRebound", Stats: player.Stats{Points: "20", Rebounds: "4"}},
+		{Name: "HighRebound", Stats: player.Stats{Points: "20", Rebounds: "9"}},
+		{Name: "TopScore", Stats: player.Stats{Points: "30", Rebounds: "2"}},
+		{Name: "MidRebound", Stats: player.Stats{Points: "20", Rebounds: "6"}},
 	}
 	state := sortState{
 		primary:      findSortColumn("PTS"),
@@ -84,10 +86,10 @@ func TestSortPlayersSecondaryBreaksTies(t *testing.T) {
 }
 
 func TestSortPlayersSecondaryDirectionIsIndependent(t *testing.T) {
-	players := []Player{
-		{Name: "LowRebound", Stats: Stats{Points: "20", Rebounds: "4"}},
-		{Name: "HighRebound", Stats: Stats{Points: "20", Rebounds: "9"}},
-		{Name: "MidRebound", Stats: Stats{Points: "20", Rebounds: "6"}},
+	players := []player.Player{
+		{Name: "LowRebound", Stats: player.Stats{Points: "20", Rebounds: "4"}},
+		{Name: "HighRebound", Stats: player.Stats{Points: "20", Rebounds: "9"}},
+		{Name: "MidRebound", Stats: player.Stats{Points: "20", Rebounds: "6"}},
 	}
 	state := sortState{
 		primary:      findSortColumn("PTS"),
@@ -114,10 +116,10 @@ func TestSortPlayersKeepsMissingLast(t *testing.T) {
 }
 
 func TestSortPlayersIsStable(t *testing.T) {
-	players := []Player{
-		{Name: "First", Stats: Stats{MPG: "20.0"}},
-		{Name: "Second", Stats: Stats{MPG: "20.0"}},
-		{Name: "Third", Stats: Stats{MPG: "20.0"}},
+	players := []player.Player{
+		{Name: "First", Stats: player.Stats{MPG: "20.0"}},
+		{Name: "Second", Stats: player.Stats{MPG: "20.0"}},
+		{Name: "Third", Stats: player.Stats{MPG: "20.0"}},
 	}
 
 	sortPlayers(players, primarySort("MPG", "desc"))

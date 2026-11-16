@@ -2,6 +2,7 @@ package auth
 
 import (
 	"context"
+	"crypto/rand"
 	"encoding/json"
 	"errors"
 	"fmt"
@@ -13,7 +14,7 @@ import (
 	"sync"
 	"time"
 
-	config "fantasy_waiver_assistant/internal/shared"
+	config "fantasy_waiver_assistant/internal/infra/config"
 )
 
 const tokenURL = "https://api.login.yahoo.com/oauth2/get_token"
@@ -92,6 +93,38 @@ func (c *Client) AuthCodeURL(state string) string {
 	}
 
 	return "https://api.login.yahoo.com/oauth2/request_auth?" + queryParams.Encode()
+}
+
+// Login starts the OAuth flow: it stores a random state cookie and redirects to
+// Yahoo's authorization page.
+func (c *Client) Login(w http.ResponseWriter, r *http.Request) {
+	state := rand.Text()
+	http.SetCookie(w, &http.Cookie{Name: "oauth_state", Value: state, Path: "/", HttpOnly: true})
+	http.Redirect(w, r, c.AuthCodeURL(state), http.StatusFound)
+}
+
+// Callback completes the OAuth flow: it checks the state cookie, exchanges the
+// authorization code for a token, and persists it.
+func (c *Client) Callback(w http.ResponseWriter, r *http.Request) {
+	cookie, err := r.Cookie("oauth_state")
+	if err != nil || cookie.Value != r.URL.Query().Get("state") {
+		http.Error(w, "invalid state", http.StatusBadRequest)
+		return
+	}
+	code := r.URL.Query().Get("code")
+	if code == "" {
+		http.Error(w, "authorization denied", http.StatusBadRequest)
+		return
+	}
+	if err := c.Exchange(r.Context(), code); err != nil {
+		http.Error(w, err.Error(), http.StatusInternalServerError)
+		return
+	}
+	if err := c.Save(".tokens.json"); err != nil {
+		http.Error(w, err.Error(), http.StatusInternalServerError)
+		return
+	}
+	http.Redirect(w, r, "/", http.StatusFound)
 }
 
 func (c *Client) Exchange(ctx context.Context, code string) error {

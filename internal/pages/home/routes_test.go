@@ -7,7 +7,7 @@ import (
 	"strings"
 	"testing"
 
-	"fantasy_waiver_assistant/internal/session"
+	"fantasy_waiver_assistant/internal/service/session"
 )
 
 // stubSession is a SessionValidator with a fixed answer.
